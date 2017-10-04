@@ -89,6 +89,12 @@ OAUTH2 CONTROLS
 - ACCESS_TOKEN_LIFESPAN: Lifespan of OAuth2 access tokens. Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 	Defaults to ACCESS_TOKEN_LIFESPAN=1h
 
+- REFRESH_TOKEN_LIFESPAN: Lifespan of OAuth2 refresh tokens. Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	 -1 -> Never expires, can be used multiple times
+	 0h -> Never expires, but can only be used once
+	72h -> Valid for 3 days
+	Defaults to REFRESH_TOKEN_LIFESPAN=0h
+
 - CHALLENGE_TOKEN_LIFESPAN: Lifespan of OAuth2 consent tokens. Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 	Defaults to CHALLENGE_TOKEN_LIFESPAN=10m
 

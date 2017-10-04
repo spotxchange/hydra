@@ -121,6 +121,9 @@ func initConfig() {
 	viper.BindEnv("ACCESS_TOKEN_LIFESPAN")
 	viper.SetDefault("ACCESS_TOKEN_LIFESPAN", "1h")
 
+	viper.BindEnv("REFRESH_TOKEN_LIFESPAN")
+	viper.SetDefault("REFRESH_TOKEN_LIFESPAN", "0h")
+
 	viper.BindEnv("ID_TOKEN_LIFESPAN")
 	viper.SetDefault("ID_TOKEN_LIFESPAN", "1h")
 
