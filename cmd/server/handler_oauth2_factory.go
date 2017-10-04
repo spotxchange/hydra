@@ -76,6 +76,7 @@ func newOAuth2Provider(c *config.Config, km jwk.Manager) fosite.OAuth2Provider {
 	rsaKey := jwk.MustRSAPrivate(jwk.First(keys.Keys))
 	fc := &compose.Config{
 		AccessTokenLifespan:   c.GetAccessTokenLifespan(),
+		RefreshTokenLifespan:  c.GetRefreshTokenLifespan(),
 		AuthorizeCodeLifespan: c.GetAuthCodeLifespan(),
 		IDTokenLifespan:       c.GetIDTokenLifespan(),
 		HashCost:              c.BCryptWorkFactor,

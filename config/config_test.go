@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"net/url"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConfig(t *testing.T) {
@@ -76,9 +77,14 @@ func TestLifespan(t *testing.T) {
 	assert.Equal(t, (&Config{}).GetAccessTokenLifespan(), time.Hour)
 	assert.Equal(t, (&Config{AccessTokenLifespan: "6h"}).GetAccessTokenLifespan(), time.Hour*6)
 
+	assert.Equal(t, (&Config{}).GetRefreshTokenLifespan(), time.Duration(0))
+	assert.Equal(t, (&Config{RefreshTokenLifespan: "6h"}).GetRefreshTokenLifespan(), time.Hour*6)
+	assert.Equal(t, (&Config{RefreshTokenLifespan: "-1"}).GetRefreshTokenLifespan(), time.Duration(-1))
+
 	assert.Equal(t, (&Config{}).GetAuthCodeLifespan(), time.Minute*10)
 	assert.Equal(t, (&Config{AuthCodeLifespan: "15m"}).GetAuthCodeLifespan(), time.Minute*15)
 
 	assert.Equal(t, (&Config{}).GetIDTokenLifespan(), time.Hour)
 	assert.Equal(t, (&Config{IDTokenLifespan: "10s"}).GetIDTokenLifespan(), time.Second*10)
+
 }

@@ -53,6 +53,7 @@ type Config struct {
 	AuthCodeLifespan       string `mapstructure:"AUTH_CODE_LIFESPAN" yaml:"-"`
 	IDTokenLifespan        string `mapstructure:"ID_TOKEN_LIFESPAN" yaml:"-"`
 	ChallengeTokenLifespan string `mapstructure:"CHALLENGE_TOKEN_LIFESPAN" yaml:"-"`
+	RefreshTokenLifespan   string `mapstructure:"REFRESH_TOKEN_LIFESPAN" yaml:"-"`
 	CookieSecret           string `mapstructure:"COOKIE_SECRET" yaml:"-"`
 	LogLevel               string `mapstructure:"LOG_LEVEL" yaml:"-"`
 	LogFormat              string `mapstructure:"LOG_FORMAT" yaml:"-"`
@@ -161,6 +162,19 @@ func (c *Config) GetAccessTokenLifespan() time.Duration {
 	if err != nil {
 		c.GetLogger().Warnf("Could not parse access token lifespan value (%s). Defaulting to 1h", c.AccessTokenLifespan)
 		return time.Hour
+	}
+	return d
+}
+
+func (c *Config) GetRefreshTokenLifespan() time.Duration {
+	if strings.HasPrefix(c.RefreshTokenLifespan, "-") {
+		c.GetLogger().Warn("Refresh token is set to permanent, it will be able to be reused.")
+		return time.Duration(-1)
+	}
+	d, err := time.ParseDuration(c.RefreshTokenLifespan)
+	if err != nil {
+		c.GetLogger().Warnf("Could not parse refresh token lifespan value (%s).", c.RefreshTokenLifespan)
+		return time.Duration(0)
 	}
 	return d
 }
