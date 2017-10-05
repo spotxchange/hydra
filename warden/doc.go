@@ -16,7 +16,7 @@
 package warden
 
 import (
-	"github.com/ory/hydra/firewall"
+	"github.com/spotxchange/hydra/firewall"
 )
 
 // The warden access request response

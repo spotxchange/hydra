@@ -17,7 +17,7 @@ package client
 import (
 	"testing"
 
-	"github.com/ory/fosite"
+	"github.com/spotxchange/fosite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

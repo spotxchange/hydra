@@ -24,12 +24,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/jwk"
-	"github.com/ory/hydra/pkg"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/jwk"
+	"github.com/spotxchange/hydra/pkg"
 	"github.com/square/go-jose"
 )
 

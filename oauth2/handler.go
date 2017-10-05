@@ -23,11 +23,12 @@ import (
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/ory/fosite"
-	"github.com/ory/hydra/firewall"
-	"github.com/ory/hydra/pkg"
+	"github.com/ory/herodot"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/firewall"
+	"github.com/spotxchange/hydra/pkg"
 )
 
 const (
@@ -36,6 +37,7 @@ const (
 	DefaultConsentPath = "/oauth2/consent-fallback"
 	TokenPath          = "/oauth2/token"
 	AuthPath           = "/oauth2/auth"
+	MigratePath        = "/oauth2/migrate"
 
 	UserinfoPath  = "/userinfo"
 	WellKnownPath = "/.well-known/openid-configuration"
@@ -116,6 +118,7 @@ type WellKnown struct {
 
 func (h *Handler) SetRoutes(r *httprouter.Router) {
 	r.POST(TokenPath, h.TokenHandler)
+	r.POST(MigratePath, h.MigrationHandler)
 	r.GET(AuthPath, h.AuthHandler)
 	r.POST(AuthPath, h.AuthHandler)
 	r.GET(DefaultConsentPath, h.DefaultConsentHandler)
@@ -245,9 +248,37 @@ func (h *Handler) RevocationHandler(w http.ResponseWriter, r *http.Request, _ ht
 	h.OAuth2.WriteRevocationResponse(w, err)
 }
 
+// swagger:route POST /oauth2/migrate oauth2 migrateOAuthToken
+// Migrate an OAuth2 access token from another system
+//
+//     Consumes:
+//     - application/x-www-form-urlencoded
+//
+//     Produces:
+//     - application/json
+//
+//     Schemes: http, https
+//
+//     Security:
+//       oauth2:
+//
+//     Responses:
+//       200: emptyResponse
+//       401: genericError
+//       500: genericError
+func (h *Handler) MigrationHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var ctx = fosite.NewContext()
+	err := h.OAuth2.NewTokenMigrationRequest(ctx, r)
+	if err != nil {
+		pkg.LogError(err, h.L)
+	}
+	h.OAuth2.WriteTokenMigrationResponse(w, err)
+}
+
 // swagger:route POST /oauth2/introspect oAuth2 introspectOAuth2Token
 //
 // Introspect OAuth2 tokens
+//
 //
 // The introspection endpoint allows to check if a token (both refresh and access) is active or not. An active token
 // is neither expired nor revoked. If a token is active, additional information on the token will be included. You can

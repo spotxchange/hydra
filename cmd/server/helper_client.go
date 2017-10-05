@@ -20,10 +20,10 @@ import (
 
 	"net/url"
 
-	"github.com/ory/hydra/client"
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/pkg"
 	"github.com/ory/ladon"
+	"github.com/spotxchange/hydra/client"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/pkg"
 )
 
 func (h *Handler) createRootIfNewInstall(c *config.Config) {

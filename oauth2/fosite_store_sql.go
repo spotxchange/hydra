@@ -24,11 +24,11 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/ory/fosite"
-	"github.com/ory/hydra/client"
 	"github.com/pkg/errors"
 	"github.com/rubenv/sql-migrate"
 	"github.com/sirupsen/logrus"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/client"
 )
 
 type FositeSQLStore struct {
@@ -194,11 +194,16 @@ func (s *FositeSQLStore) createSession(signature string, requester fosite.Reques
 		return err
 	}
 
+	dupStatement := "ON DUPLICATE KEY UPDATE"
+	if s.DB.DriverName() == "postgres" {
+		dupStatement = "ON CONFLICT (signature) DO UPDATE SET"
+	}
 	query := fmt.Sprintf(
-		"INSERT INTO hydra_oauth2_%s (%s) VALUES (%s)",
+		"INSERT INTO hydra_oauth2_%s (%s) VALUES (%s) %s requested_at = now()",
 		table,
 		strings.Join(sqlParams, ", "),
 		":"+strings.Join(sqlParams, ", :"),
+		dupStatement,
 	)
 	if _, err := s.DB.NamedExec(query, data); err != nil {
 		return errors.WithStack(err)

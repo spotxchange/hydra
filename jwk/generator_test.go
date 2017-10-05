@@ -15,10 +15,10 @@
 package jwk
 
 import (
+	"fmt"
 	"testing"
 
-	"fmt"
-
+	"github.com/spotxchange/hydra/pkg"
 	"github.com/square/go-jose"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

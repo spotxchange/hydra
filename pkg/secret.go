@@ -14,7 +14,7 @@
 
 package pkg
 
-import "github.com/ory/hydra/rand/sequence"
+import "github.com/spotxchange/hydra/rand/sequence"
 
 var secretCharSet = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-.~")
 

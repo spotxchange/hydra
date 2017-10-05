@@ -19,13 +19,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ory/fosite"
-	"github.com/ory/hydra/firewall"
-	"github.com/ory/hydra/oauth2"
-	"github.com/ory/hydra/warden/group"
 	"github.com/ory/ladon"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/firewall"
+	"github.com/spotxchange/hydra/oauth2"
+	"github.com/spotxchange/hydra/warden/group"
 )
 
 type LocalWarden struct {

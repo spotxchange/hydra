@@ -17,8 +17,8 @@ package jwk
 import (
 	"sync"
 
-	"github.com/ory/hydra/pkg"
 	"github.com/pkg/errors"
+	"github.com/spotxchange/hydra/pkg"
 	"github.com/square/go-jose"
 )
 

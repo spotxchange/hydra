@@ -19,10 +19,10 @@ import (
 	"sync"
 
 	"github.com/imdario/mergo"
-	"github.com/ory/fosite"
-	"github.com/ory/hydra/pkg"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/pkg"
 )
 
 type MemoryManager struct {

@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/spotxchange/hydra/pkg"
 	"github.com/square/go-jose"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

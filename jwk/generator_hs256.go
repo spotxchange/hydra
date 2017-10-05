@@ -20,6 +20,7 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	"github.com/spotxchange/hydra/rand/sequence"
 	"github.com/square/go-jose"
 )
 

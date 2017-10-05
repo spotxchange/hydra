@@ -17,9 +17,9 @@ package pkg
 import (
 	"context"
 
-	"github.com/ory/fosite"
-	"github.com/ory/fosite/handler/oauth2"
-	"github.com/ory/fosite/handler/openid"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/fosite/handler/oauth2"
+	"github.com/spotxchange/fosite/handler/openid"
 )
 
 type FositeStorer interface {

@@ -19,9 +19,11 @@ import (
 
 	"net/http"
 
-	"github.com/ory/hydra/config"
-	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/spf13/cobra"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/pkg"
+	hydra "github.com/spotxchange/hydra/sdk/go/hydra/swagger"
+	"github.com/spotxchange/hydra/warden/group"
 )
 
 type GroupHandler struct {

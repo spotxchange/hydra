@@ -22,16 +22,16 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/julienschmidt/httprouter"
-	"github.com/ory/fosite"
-	"github.com/ory/fosite/compose"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/client"
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/jwk"
-	"github.com/ory/hydra/oauth2"
-	"github.com/ory/hydra/pkg"
-	"github.com/ory/hydra/warden"
 	"github.com/pkg/errors"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/fosite/compose"
+	"github.com/spotxchange/hydra/client"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/jwk"
+	"github.com/spotxchange/hydra/oauth2"
+	"github.com/spotxchange/hydra/pkg"
+	"github.com/spotxchange/hydra/warden"
 )
 
 func injectFositeStore(c *config.Config, clients client.Manager) {
@@ -108,6 +108,7 @@ func newOAuth2Provider(c *config.Config, km jwk.Manager) fosite.OAuth2Provider {
 		compose.OAuth2AuthorizeExplicitFactory,
 		compose.OAuth2AuthorizeImplicitFactory,
 		compose.OAuth2ClientCredentialsGrantFactory,
+		compose.OAuth2TokenMigrationFactory,
 		compose.OAuth2RefreshTokenGrantFactory,
 		compose.OpenIDConnectExplicitFactory,
 		compose.OpenIDConnectHybridFactory,

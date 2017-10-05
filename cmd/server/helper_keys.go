@@ -18,10 +18,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/jwk"
-	"github.com/ory/hydra/pkg"
 	"github.com/pkg/errors"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/jwk"
+	"github.com/spotxchange/hydra/pkg"
 )
 
 func createRS256KeysIfNotExist(c *config.Config, set, kid, use string) {

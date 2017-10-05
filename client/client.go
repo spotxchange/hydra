@@ -17,7 +17,7 @@ package client
 import (
 	"strings"
 
-	"github.com/ory/fosite"
+	"github.com/spotxchange/fosite"
 )
 
 // Client represents an OAuth 2.0 Client.

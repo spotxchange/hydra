@@ -19,9 +19,9 @@ import (
 	"encoding/json"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/ory/hydra/pkg"
 	"github.com/pkg/errors"
 	"github.com/rubenv/sql-migrate"
+	"github.com/spotxchange/hydra/pkg"
 	"github.com/square/go-jose"
 )
 

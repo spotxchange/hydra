@@ -15,7 +15,7 @@
 package client
 
 import (
-	"github.com/ory/fosite"
+	"github.com/spotxchange/fosite"
 )
 
 type Manager interface {

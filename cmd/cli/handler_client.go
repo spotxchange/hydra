@@ -22,10 +22,11 @@ import (
 
 	"net/http"
 
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/pkg"
 	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/spf13/cobra"
+	"github.com/spotxchange/hydra/client"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/pkg"
 )
 
 type ClientHandler struct {

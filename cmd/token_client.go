@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ory/hydra/pkg"
 	"github.com/spf13/cobra"
+	"github.com/spotxchange/hydra/pkg"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
