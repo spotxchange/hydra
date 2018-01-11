@@ -1,18 +1,30 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package oauth2
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
-
 	"strings"
-	"time"
 
-	"github.com/gorilla/sessions"
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/fosite"
-	"github.com/ory/herodot"
+	"github.com/ory/hydra/firewall"
 	"github.com/ory/hydra/pkg"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -21,10 +33,11 @@ import (
 const (
 	OpenIDConnectKeyName = "hydra.openid.id-token"
 
-	ConsentPath = "/oauth2/consent"
-	TokenPath   = "/oauth2/token"
-	AuthPath    = "/oauth2/auth"
+	DefaultConsentPath = "/oauth2/consent-fallback"
+	TokenPath          = "/oauth2/token"
+	AuthPath           = "/oauth2/auth"
 
+	UserinfoPath  = "/userinfo"
 	WellKnownPath = "/.well-known/openid-configuration"
 	JWKPath       = "/.well-known/jwks.json"
 
@@ -32,27 +45,12 @@ const (
 	IntrospectPath = "/oauth2/introspect"
 	RevocationPath = "/oauth2/revoke"
 
+	IntrospectScope = "hydra.introspect"
+
 	consentCookieName = "consent_session"
 )
 
-type Handler struct {
-	OAuth2  fosite.OAuth2Provider
-	Consent ConsentStrategy
-
-	H herodot.Writer
-
-	ForcedHTTP bool
-	ConsentURL url.URL
-
-	AccessTokenLifespan time.Duration
-	CookieStore         sessions.Store
-
-	L logrus.FieldLogger
-
-	Issuer string
-}
-
-// swagger:model WellKnown
+// swagger:model wellKnown
 type WellKnown struct {
 	// URL using the https scheme with no query or fragment component that the OP asserts as its Issuer Identifier.
 	// If Issuer discovery is supported , this value MUST be identical to the issuer value returned
@@ -88,39 +86,100 @@ type WellKnown struct {
 	// required: true
 	SubjectTypes []string `json:"subject_types_supported"`
 
-	// JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for the ID Token
-	// to encode the Claims in a JWT [JWT]. The algorithm RS256 MUST be included. The value none MAY be supported,
-	// but MUST NOT be used unless the Response Type used returns no ID Token from the Authorization Endpoint
-	// (such as when using the Authorization Code Flow).
-	//
-	// required: true
-	SigningAlgs []string `json:"id_token_signing_alg_values_supported"`
-
 	// JSON array containing a list of the OAuth 2.0 response_type values that this OP supports. Dynamic OpenID
 	// Providers MUST support the code, id_token, and the token id_token Response Type values.
 	//
 	// required: true
 	ResponseTypes []string `json:"response_types_supported"`
+
+	// JSON array containing a list of the Claim Names of the Claims that the OpenID Provider MAY be able to supply
+	// values for. Note that for privacy or other reasons, this might not be an exhaustive list.
+	ClaimsSupported []string `json:"claims_supported"`
+
+	// URL of the OP's UserInfo Endpoint.
+	UserinfoEndpoint string `json:"userinfo_endpoint"`
+
+	// SON array containing a list of the OAuth 2.0 [RFC6749] scope values that this server supports. The server MUST
+	// support the openid scope value. Servers MAY choose not to advertise some supported scope values even when this parameter is used
+	ScopesSupported []string `json:"scopes_supported"`
+
+	// JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are
+	// client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0
+	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported"`
+
+	// JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for the ID Token
+	// to encode the Claims in a JWT.
+	//
+	// required: true
+	IDTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
 }
 
 func (h *Handler) SetRoutes(r *httprouter.Router) {
 	r.POST(TokenPath, h.TokenHandler)
 	r.GET(AuthPath, h.AuthHandler)
 	r.POST(AuthPath, h.AuthHandler)
-	r.GET(ConsentPath, h.DefaultConsentHandler)
+	r.GET(DefaultConsentPath, h.DefaultConsentHandler)
 	r.POST(IntrospectPath, h.IntrospectHandler)
 	r.POST(RevocationPath, h.RevocationHandler)
 	r.GET(WellKnownPath, h.WellKnownHandler)
+	r.GET(UserinfoPath, h.UserinfoHandler)
+	r.POST(UserinfoPath, h.UserinfoHandler)
 }
 
-// swagger:route GET /.well-known/openid-configuration oauth2 openid-connect WellKnownHandler
+// swagger:route GET /.well-known/openid-configuration oAuth2 getWellKnown
 //
 // Server well known configuration
 //
-// For more information, please refer to https://openid.net/specs/openid-connect-discovery-1_0.html
+// The well known endpoint an be used to retrieve information for OpenID Connect clients. We encourage you to not roll
+// your own OpenID Connect client but to use an OpenID Connect client library instead. You can learn more on this
+// flow at https://openid.net/specs/openid-connect-discovery-1_0.html
 //
-//     Consumes:
-//     - application/x-www-form-urlencoded
+//     Produces:
+//     - application/json
+//
+//     Schemes: http, https
+//
+//     Responses:
+//       200: wellKnown
+//       401: genericError
+//       500: genericError
+func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	userInfoEndpoint := h.Issuer + UserinfoPath
+	if h.UserinfoEndpoint != "" {
+		userInfoEndpoint = h.UserinfoEndpoint
+	}
+
+	claimsSupported := []string{"sub"}
+	if h.ClaimsSupported != "" {
+		claimsSupported = append(claimsSupported, strings.Split(h.ClaimsSupported, ",")...)
+	}
+
+	scopesSupported := []string{"offline", "openid"}
+	if h.ScopesSupported != "" {
+		scopesSupported = append(scopesSupported, strings.Split(h.ScopesSupported, ",")...)
+	}
+
+	h.H.Write(w, r, &WellKnown{
+		Issuer:                            h.Issuer,
+		AuthURL:                           h.Issuer + AuthPath,
+		TokenURL:                          h.Issuer + TokenPath,
+		JWKsURI:                           h.Issuer + JWKPath,
+		SubjectTypes:                      []string{"pairwise", "public"},
+		ResponseTypes:                     []string{"code", "code id_token", "id_token", "token id_token", "token", "token id_token code"},
+		ClaimsSupported:                   claimsSupported,
+		ScopesSupported:                   scopesSupported,
+		UserinfoEndpoint:                  userInfoEndpoint,
+		TokenEndpointAuthMethodsSupported: []string{"client_secret_post", "client_secret_basic"},
+		IDTokenSigningAlgValuesSupported:  []string{"RS256"},
+	})
+}
+
+// swagger:route POST /userinfo oAuth2 userinfo
+//
+// OpenID Connect Userinfo
+//
+// This endpoint returns the payload of the ID Token, including the idTokenExtra values, of the provided OAuth 2.0 access token.
+// The endpoint implements http://openid.net/specs/openid-connect-core-1_0.html#UserInfo .
 //
 //     Produces:
 //     - application/json
@@ -131,38 +190,45 @@ func (h *Handler) SetRoutes(r *httprouter.Router) {
 //       oauth2:
 //
 //     Responses:
-//       200: WellKnown
+//       200: userinfoResponse
 //       401: genericError
 //       500: genericError
-func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	wellKnown := WellKnown{
-		Issuer:        h.Issuer,
-		AuthURL:       h.Issuer + AuthPath,
-		TokenURL:      h.Issuer + TokenPath,
-		JWKsURI:       h.Issuer + JWKPath,
-		SubjectTypes:  []string{"pairwise", "public"},
-		SigningAlgs:   []string{"RS256"},
-		ResponseTypes: []string{"code", "code id_token", "id_token", "token id_token", "token"},
+func (h *Handler) UserinfoHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	session := NewSession("")
+	ar, err := h.OAuth2.IntrospectToken(r.Context(), fosite.AccessTokenFromRequest(r), fosite.AccessToken, session)
+	if err != nil {
+		h.H.WriteError(w, r, err)
+		return
 	}
-	h.H.Write(w, r, wellKnown)
+
+	interim := ar.GetSession().(*Session).IDTokenClaims().ToMap()
+	delete(interim, "aud")
+	delete(interim, "iss")
+	delete(interim, "nonce")
+	delete(interim, "at_hash")
+	delete(interim, "c_hash")
+	delete(interim, "auth_time")
+	delete(interim, "iat")
+	delete(interim, "exp")
+
+	h.H.Write(w, r, interim)
 }
 
-// swagger:route POST /oauth2/revoke oauth2 revokeOAuthToken
+// swagger:route POST /oauth2/revoke oAuth2 revokeOAuth2Token
 //
-// Revoke an OAuth2 access token
+// Revoke OAuth2 tokens
 //
-// For more information, please refer to https://tools.ietf.org/html/rfc7009
+// Revoking a token (both access and refresh) means that the tokens will be invalid. A revoked access token can no
+// longer be used to make access requests, and a revoked refresh token can no longer be used to refresh an access token.
+// Revoking a refresh token also invalidates the access token that was created with it.
 //
 //     Consumes:
 //     - application/x-www-form-urlencoded
 //
-//     Produces:
-//     - application/json
-//
 //     Schemes: http, https
 //
 //     Security:
-//       oauth2:
+//       basic:
 //
 //     Responses:
 //       200: emptyResponse
@@ -179,11 +245,21 @@ func (h *Handler) RevocationHandler(w http.ResponseWriter, r *http.Request, _ ht
 	h.OAuth2.WriteRevocationResponse(w, err)
 }
 
-// swagger:route POST /oauth2/introspect oauth2 introspectOAuthToken
+// swagger:route POST /oauth2/introspect oAuth2 introspectOAuth2Token
 //
-// Introspect an OAuth2 access token
+// Introspect OAuth2 tokens
 //
-// For more information, please refer to https://tools.ietf.org/html/rfc7662
+// The introspection endpoint allows to check if a token (both refresh and access) is active or not. An active token
+// is neither expired nor revoked. If a token is active, additional information on the token will be included. You can
+// set additional data for a token by setting `accessTokenExtra` during the consent flow.
+//
+//  ```
+//  {
+//    "resources": ["rn:hydra:oauth2:tokens"],
+//    "actions": ["introspect"],
+//    "effect": "allow"
+//  }
+//  ```
 //
 //     Consumes:
 //     - application/x-www-form-urlencoded
@@ -194,13 +270,37 @@ func (h *Handler) RevocationHandler(w http.ResponseWriter, r *http.Request, _ ht
 //     Schemes: http, https
 //
 //     Security:
-//       oauth2:
+//       basic:
+//       oauth2: hydra.introspect
 //
 //     Responses:
-//       200: introspectOAuthTokenResponse
+//       200: introspectOAuth2TokenResponse
 //       401: genericError
 //       500: genericError
 func (h *Handler) IntrospectHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if token := h.W.TokenFromRequest(r); token != "" {
+		if _, err := h.W.TokenAllowed(r.Context(), token, &firewall.TokenAccessRequest{
+			Resource: fmt.Sprintf(h.PrefixResource("oauth2:tokens")),
+			Action:   "introspect",
+		}, IntrospectScope); err != nil {
+			h.H.WriteError(w, r, err)
+			return
+		}
+	} else if client, _, ok := r.BasicAuth(); ok {
+		// If no token is given, we do not need a scope.
+		if err := h.W.IsAllowed(r.Context(), &firewall.AccessRequest{
+			Subject:  client,
+			Resource: fmt.Sprintf(h.PrefixResource("oauth2:tokens")),
+			Action:   "introspect",
+		}); err != nil {
+			h.H.WriteError(w, r, err)
+			return
+		}
+	} else {
+		h.H.WriteError(w, r, errors.WithStack(fosite.ErrRequestUnauthorized))
+		return
+	}
+
 	var session = NewSession("")
 
 	var ctx = fosite.NewContext()
@@ -217,7 +317,7 @@ func (h *Handler) IntrospectHandler(w http.ResponseWriter, r *http.Request, _ ht
 	}
 
 	w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	err = json.NewEncoder(w).Encode(&Introspection{
+	if err = json.NewEncoder(w).Encode(&Introspection{
 		Active:    true,
 		ClientID:  resp.GetAccessRequester().GetClient().GetID(),
 		Scope:     strings.Join(resp.GetAccessRequester().GetGrantedScopes(), " "),
@@ -226,19 +326,20 @@ func (h *Handler) IntrospectHandler(w http.ResponseWriter, r *http.Request, _ ht
 		Subject:   resp.GetAccessRequester().GetSession().GetSubject(),
 		Username:  resp.GetAccessRequester().GetSession().GetUsername(),
 		Extra:     resp.GetAccessRequester().GetSession().(*Session).Extra,
-		Audience:  resp.GetAccessRequester().GetClient().GetID(),
 		Issuer:    h.Issuer,
-	})
-	if err != nil {
+	}); err != nil {
 		pkg.LogError(err, h.L)
 	}
 }
 
-// swagger:route POST /oauth2/token oauth2 oauthToken
+// swagger:route POST /oauth2/token oAuth2 oauthToken
 //
-// The OAuth 2.0 Token endpoint
+// The OAuth 2.0 token endpoint
 //
-// For more information, please refer to https://tools.ietf.org/html/rfc6749#section-4
+// This endpoint is not documented here because you should never use your own implementation to perform OAuth2 flows.
+// OAuth2 is a very popular protocol and a library for your programming language will exists.
+//
+// To learn more about this flow please refer to the specification: https://tools.ietf.org/html/rfc6749
 //
 //     Consumes:
 //     - application/x-www-form-urlencoded
@@ -250,6 +351,7 @@ func (h *Handler) IntrospectHandler(w http.ResponseWriter, r *http.Request, _ ht
 //
 //     Security:
 //       basic:
+//       oauth2:
 //
 //     Responses:
 //       200: oauthTokenResponse
@@ -269,7 +371,7 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprou
 	if accessRequest.GetGrantTypes().Exact("client_credentials") {
 		session.Subject = accessRequest.GetClient().GetID()
 		for _, scope := range accessRequest.GetRequestedScopes() {
-			if fosite.HierarchicScopeStrategy(accessRequest.GetClient().GetScopes(), scope) {
+			if h.ScopeStrategy(accessRequest.GetClient().GetScopes(), scope) {
 				accessRequest.GrantScope(scope)
 			}
 		}
@@ -285,11 +387,14 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprou
 	h.OAuth2.WriteAccessResponse(w, accessRequest, accessResponse)
 }
 
-// swagger:route GET /oauth2/auth oauth2 oauthAuth
+// swagger:route GET /oauth2/auth oAuth2 oauthAuth
 //
-// The OAuth 2.0 Auth endpoint
+// The OAuth 2.0 authorize endpoint
 //
-// For more information, please refer to https://tools.ietf.org/html/rfc6749#section-4
+// This endpoint is not documented here because you should never use your own implementation to perform OAuth2 flows.
+// OAuth2 is a very popular protocol and a library for your programming language will exists.
+//
+// To learn more about this flow please refer to the specification: https://tools.ietf.org/html/rfc6749
 //
 //     Consumes:
 //     - application/x-www-form-urlencoded
@@ -311,24 +416,14 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request, _ httprout
 	}
 
 	// A session_token will be available if the user was authenticated an gave consent
-	consentToken := authorizeRequest.GetRequestForm().Get("consent")
-	if consentToken == "" {
+	consent := authorizeRequest.GetRequestForm().Get("consent")
+	if consent == "" {
 		// otherwise redirect to log in endpoint
 		if err := h.redirectToConsent(w, r, authorizeRequest); err != nil {
 			pkg.LogError(err, h.L)
 			h.writeAuthorizeError(w, authorizeRequest, err)
 			return
 		}
-		return
-	} else if consentToken == "denied" {
-		err := errors.New("The resource owner denied consent for this request")
-		h.writeAuthorizeError(w, authorizeRequest, &fosite.RFC6749Error{
-			Name:        "Resource owner denied consent",
-			Description: err.Error(),
-			Debug:       err.Error(),
-			Hint:        "Token validation failed.",
-			Code:        http.StatusUnauthorized,
-		})
 		return
 	}
 
@@ -341,10 +436,10 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request, _ httprout
 
 	// decode consent_token claims
 	// verify anti-CSRF (inject state) and anti-replay token (expiry time, good value would be 10 seconds)
-	session, err := h.Consent.ValidateResponse(authorizeRequest, consentToken, cookie)
+	session, err := h.Consent.ValidateConsentRequest(authorizeRequest, consent, cookie)
 	if err != nil {
 		pkg.LogError(err, h.L)
-		h.writeAuthorizeError(w, authorizeRequest, errors.Wrap(fosite.ErrAccessDenied, ""))
+		h.writeAuthorizeError(w, authorizeRequest, err)
 		return
 	}
 
@@ -390,14 +485,14 @@ func (h *Handler) redirectToConsent(w http.ResponseWriter, r *http.Request, auth
 	}
 	authUrl.RawQuery = r.URL.RawQuery
 
-	challenge, err := h.Consent.IssueChallenge(authorizeRequest, authUrl.String(), cookie)
+	challenge, err := h.Consent.CreateConsentRequest(authorizeRequest, authUrl.String(), cookie)
 	if err != nil {
 		return err
 	}
 
 	p := h.ConsentURL
 	q := p.Query()
-	q.Set("challenge", challenge)
+	q.Set("consent", challenge)
 	p.RawQuery = q.Encode()
 
 	if err := cookie.Save(r, w); err != nil {

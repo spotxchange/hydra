@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package oauth2
 
 import (
@@ -23,17 +37,31 @@ type FositeSQLStore struct {
 	L  logrus.FieldLogger
 }
 
-func sqlTemplate(table string) string {
-	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS hydra_oauth2_%s (
+func sqlSchemaUp(table string, id string) string {
+	schemas := map[string]string{
+		"1": fmt.Sprintf(`CREATE TABLE IF NOT EXISTS hydra_oauth2_%s (
 	signature      	varchar(255) NOT NULL PRIMARY KEY,
 	request_id  	varchar(255) NOT NULL,
 	requested_at  	timestamp NOT NULL DEFAULT now(),
-	client_id  	text NOT NULL,
-	scope  		text NOT NULL,
+	client_id  		text NOT NULL,
+	scope  			text NOT NULL,
 	granted_scope 	text NOT NULL,
-	form_data  	text NOT NULL,
+	form_data  		text NOT NULL,
 	session_data  	text NOT NULL
-)`, table)
+)`, table),
+		"2": fmt.Sprintf("ALTER TABLE hydra_oauth2_%s ADD subject varchar(255) NOT NULL DEFAULT ''", table),
+	}
+
+	return schemas[id]
+}
+
+func sqlSchemaDown(table string, id string) string {
+	schemas := map[string]string{
+		"1": fmt.Sprintf(`DROP TABLE %s)`, table),
+		"2": fmt.Sprintf("ALTER TABLE hydra_oauth2_%s DROP COLUMN subject", table),
+	}
+
+	return schemas[id]
 }
 
 const (
@@ -48,16 +76,31 @@ var migrations = &migrate.MemoryMigrationSource{
 		{
 			Id: "1",
 			Up: []string{
-				sqlTemplate(sqlTableAccess),
-				sqlTemplate(sqlTableRefresh),
-				sqlTemplate(sqlTableCode),
-				sqlTemplate(sqlTableOpenID),
+				sqlSchemaUp(sqlTableAccess, "1"),
+				sqlSchemaUp(sqlTableRefresh, "1"),
+				sqlSchemaUp(sqlTableCode, "1"),
+				sqlSchemaUp(sqlTableOpenID, "1"),
 			},
 			Down: []string{
-				fmt.Sprintf("DROP TABLE %s", sqlTableAccess),
-				fmt.Sprintf("DROP TABLE %s", sqlTableRefresh),
-				fmt.Sprintf("DROP TABLE %s", sqlTableCode),
-				fmt.Sprintf("DROP TABLE %s", sqlTableOpenID),
+				sqlSchemaDown(sqlTableAccess, "1"),
+				sqlSchemaDown(sqlTableRefresh, "1"),
+				sqlSchemaDown(sqlTableCode, "1"),
+				sqlSchemaDown(sqlTableOpenID, "1"),
+			},
+		},
+		{
+			Id: "2",
+			Up: []string{
+				sqlSchemaUp(sqlTableAccess, "2"),
+				sqlSchemaUp(sqlTableRefresh, "2"),
+				sqlSchemaUp(sqlTableCode, "2"),
+				sqlSchemaUp(sqlTableOpenID, "2"),
+			},
+			Down: []string{
+				sqlSchemaDown(sqlTableAccess, "2"),
+				sqlSchemaDown(sqlTableRefresh, "2"),
+				sqlSchemaDown(sqlTableCode, "2"),
+				sqlSchemaDown(sqlTableOpenID, "2"),
 			},
 		},
 	},
@@ -72,6 +115,7 @@ var sqlParams = []string{
 	"granted_scope",
 	"form_data",
 	"session_data",
+	"subject",
 }
 
 type sqlData struct {
@@ -82,12 +126,16 @@ type sqlData struct {
 	Scopes        string    `db:"scope"`
 	GrantedScopes string    `db:"granted_scope"`
 	Form          string    `db:"form_data"`
+	Subject       string    `db:"subject"`
 	Session       []byte    `db:"session_data"`
 }
 
 func sqlSchemaFromRequest(signature string, r fosite.Requester, logger logrus.FieldLogger) (*sqlData, error) {
+	subject := ""
 	if r.GetSession() == nil {
 		logger.Debugf("Got an empty session in sqlSchemaFromRequest")
+	} else {
+		subject = r.GetSession().GetSubject()
 	}
 
 	session, err := json.Marshal(r.GetSession())
@@ -104,6 +152,7 @@ func sqlSchemaFromRequest(signature string, r fosite.Requester, logger logrus.Fi
 		GrantedScopes: strings.Join([]string(r.GetGrantedScopes()), "|"),
 		Form:          r.GetRequestForm().Encode(),
 		Session:       session,
+		Subject:       subject,
 	}, nil
 }
 
@@ -234,36 +283,6 @@ func (s *FositeSQLStore) DeleteRefreshTokenSession(_ context.Context, signature 
 
 func (s *FositeSQLStore) CreateImplicitAccessTokenSession(ctx context.Context, signature string, requester fosite.Requester) error {
 	return s.CreateAccessTokenSession(ctx, signature, requester)
-}
-
-func (s *FositeSQLStore) PersistAuthorizeCodeGrantSession(ctx context.Context, authorizeCode, accessSignature, refreshSignature string, request fosite.Requester) error {
-	if err := s.DeleteAuthorizeCodeSession(ctx, authorizeCode); err != nil {
-		return err
-	} else if err := s.CreateAccessTokenSession(ctx, accessSignature, request); err != nil {
-		return err
-	}
-
-	if refreshSignature == "" {
-		return nil
-	}
-
-	if err := s.CreateRefreshTokenSession(ctx, refreshSignature, request); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *FositeSQLStore) PersistRefreshTokenGrantSession(ctx context.Context, originalRefreshSignature, accessSignature, refreshSignature string, request fosite.Requester) error {
-	if err := s.DeleteRefreshTokenSession(ctx, originalRefreshSignature); err != nil {
-		return err
-	} else if err := s.CreateAccessTokenSession(ctx, accessSignature, request); err != nil {
-		return err
-	} else if err := s.CreateRefreshTokenSession(ctx, refreshSignature, request); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (s *FositeSQLStore) RevokeRefreshToken(ctx context.Context, id string) error {

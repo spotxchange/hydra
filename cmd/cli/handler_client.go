@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cli
 
 import (
@@ -6,10 +20,11 @@ import (
 	"os"
 	"strings"
 
-	"context"
-	"github.com/ory/hydra/client"
+	"net/http"
+
 	"github.com/ory/hydra/config"
 	"github.com/ory/hydra/pkg"
+	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/spf13/cobra"
 )
 
@@ -23,16 +38,15 @@ func newClientHandler(c *config.Config) *ClientHandler {
 	}
 }
 
-func (h *ClientHandler) newClientManager(cmd *cobra.Command) *client.HTTPManager {
-	dry, _ := cmd.Flags().GetBool("dry")
-	term, _ := cmd.Flags().GetBool("fake-tls-termination")
+func (h *ClientHandler) newClientManager(cmd *cobra.Command) *hydra.OAuth2Api {
+	c := hydra.NewOAuth2ApiWithBasePath(h.Config.ClusterURL)
+	c.Configuration.Transport = h.Config.OAuth2Client(cmd).Transport
 
-	return &client.HTTPManager{
-		Dry:                dry,
-		Endpoint:           h.Config.Resolve("/clients"),
-		Client:             h.Config.OAuth2Client(cmd),
-		FakeTLSTermination: term,
+	if term, _ := cmd.Flags().GetBool("fake-tls-termination"); term {
+		c.Configuration.DefaultHeader["X-Forwarded-Proto"] = "https"
 	}
+
+	return c
 }
 
 func (h *ClientHandler) ImportClients(cmd *cobra.Command, args []string) {
@@ -46,17 +60,13 @@ func (h *ClientHandler) ImportClients(cmd *cobra.Command, args []string) {
 	for _, path := range args {
 		reader, err := os.Open(path)
 		pkg.Must(err, "Could not open file %s: %s", path, err)
-		var c client.Client
+		var c hydra.OAuth2Client
 		err = json.NewDecoder(reader).Decode(&c)
 		pkg.Must(err, "Could not parse JSON: %s", err)
 
-		err = m.CreateClient(&c)
-		if m.Dry {
-			fmt.Printf("%s\n", err)
-			continue
-		}
-		pkg.Must(err, "Could not create client: %s", err)
-		fmt.Printf("Imported client %s:%s from %s.\n", c.ID, c.Secret, path)
+		result, response, err := m.CreateOAuth2Client(c)
+		checkResponse(response, err, http.StatusCreated)
+		fmt.Printf("Imported OAuth2 client %s:%s from %s.\n", result.Id, result.ClientSecret, path)
 	}
 }
 
@@ -81,25 +91,22 @@ func (h *ClientHandler) CreateClient(cmd *cobra.Command, args []string) {
 		fmt.Println("You should not provide secrets using command line flags. The secret might leak to bash history and similar systems.")
 	}
 
-	cc := &client.Client{
-		ID:            id,
-		Secret:        secret,
+	cc := hydra.OAuth2Client{
+		Id:            id,
+		ClientSecret:  secret,
 		ResponseTypes: responseTypes,
 		Scope:         strings.Join(allowedScopes, " "),
 		GrantTypes:    grantTypes,
-		RedirectURIs:  callbacks,
-		Name:          name,
+		RedirectUris:  callbacks,
+		ClientName:    name,
 		Public:        public,
 	}
-	err = m.CreateClient(cc)
-	if m.Dry {
-		fmt.Printf("%s\n", err)
-		return
-	}
-	pkg.Must(err, "Could not create client: %s", err)
 
-	fmt.Printf("Client ID: %s\n", cc.ID)
-	fmt.Printf("Client Secret: %s\n", secret)
+	result, response, err := m.CreateOAuth2Client(cc)
+	checkResponse(response, err, http.StatusCreated)
+
+	fmt.Printf("OAuth2 client id: %s\n", result.Id)
+	fmt.Printf("OAuth2 client secret: %s\n", result.ClientSecret)
 }
 
 func (h *ClientHandler) DeleteClient(cmd *cobra.Command, args []string) {
@@ -111,15 +118,11 @@ func (h *ClientHandler) DeleteClient(cmd *cobra.Command, args []string) {
 	}
 
 	for _, c := range args {
-		err := m.DeleteClient(c)
-		if m.Dry {
-			fmt.Printf("%s\n", err)
-			continue
-		}
-		pkg.Must(err, "Could not delete client: %s", err)
+		response, err := m.DeleteOAuth2Client(c)
+		checkResponse(response, err, http.StatusNoContent)
 	}
 
-	fmt.Println("Client(s) deleted.")
+	fmt.Println("OAuth2 client(s) deleted.")
 }
 
 func (h *ClientHandler) GetClient(cmd *cobra.Command, args []string) {
@@ -130,15 +133,7 @@ func (h *ClientHandler) GetClient(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	cl, err := m.GetClient(context.Background(), args[0])
-	if m.Dry {
-		fmt.Printf("%s\n", err)
-		return
-	}
-	pkg.Must(err, "Could not delete client: %s", err)
-
-	out, err := json.MarshalIndent(cl, "", "\t")
-	pkg.Must(err, "Could not convert client to JSON: %s", err)
-
-	fmt.Printf("%s\n", out)
+	cl, response, err := m.GetOAuth2Client(args[0])
+	checkResponse(response, err, http.StatusOK)
+	fmt.Printf("%s\n", formatResponse(cl))
 }

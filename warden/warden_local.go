@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package warden
 
 import (
@@ -56,6 +70,7 @@ func (w *LocalWarden) TokenAllowed(ctx context.Context, token string, a *firewal
 	if err != nil {
 		w.L.WithFields(logrus.Fields{
 			"request": a,
+			"scopes":  scopes,
 			"reason":  "Token is expired, malformed or missing",
 		}).WithError(err).Infof("Access denied")
 		return nil, err
@@ -69,28 +84,28 @@ func (w *LocalWarden) TokenAllowed(ctx context.Context, token string, a *firewal
 		Context:  a.Context,
 	}); err != nil {
 		w.L.WithFields(logrus.Fields{
-			"scopes":   scopes,
-			"subject":  session.GetSubject(),
-			"audience": auth.GetClient().GetID(),
-			"request":  a,
-			"reason":   "The policy decision point denied the request",
+			"scopes":    scopes,
+			"subject":   session.GetSubject(),
+			"client_id": auth.GetClient().GetID(),
+			"request":   a,
+			"reason":    "The policy decision point denied the request",
 		}).WithError(err).Infof("Access denied")
 		return nil, err
 	}
 
 	c := w.newContext(auth)
 	w.L.WithFields(logrus.Fields{
-		"subject":  c.Subject,
-		"audience": auth.GetClient().GetID(),
-		"request":  auth,
-		"result":   c,
+		"subject":   c.Subject,
+		"client_id": auth.GetClient().GetID(),
+		"request":   auth,
+		"result":    c,
 	}).Infof("Access granted")
 
 	return c, nil
 }
 
 func (w *LocalWarden) isAllowed(ctx context.Context, a *ladon.Request) error {
-	groups, err := w.Groups.FindGroupNames(a.Subject)
+	groups, err := w.Groups.FindGroupsByMember(a.Subject, 10000, 0)
 	if err != nil {
 		return err
 	}
@@ -107,7 +122,7 @@ func (w *LocalWarden) isAllowed(ctx context.Context, a *ladon.Request) error {
 		errs[k+1] = w.Warden.IsAllowed(&ladon.Request{
 			Resource: a.Resource,
 			Action:   a.Action,
-			Subject:  g,
+			Subject:  g.ID,
 			Context:  a.Context,
 		})
 	}
@@ -139,7 +154,7 @@ func (w *LocalWarden) newContext(auth fosite.AccessRequester) *firewall.Context 
 		Subject:       session.Subject,
 		GrantedScopes: auth.GetGrantedScopes(),
 		Issuer:        w.Issuer,
-		Audience:      auth.GetClient().GetID(),
+		ClientID:      auth.GetClient().GetID(),
 		IssuedAt:      auth.GetRequestedAt(),
 		ExpiresAt:     exp,
 		Extra:         session.Extra,

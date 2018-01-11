@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package client
 
 import (
@@ -14,9 +28,10 @@ import (
 )
 
 type Handler struct {
-	Manager Manager
-	H       herodot.Writer
-	W       firewall.Firewall
+	Manager        Manager
+	H              herodot.Writer
+	W              firewall.Firewall
+	ResourcePrefix string
 }
 
 const (
@@ -24,10 +39,22 @@ const (
 )
 
 const (
-	ClientsResource = "rn:hydra:clients"
-	ClientResource  = "rn:hydra:clients:%s"
+	ClientsResource = "clients"
+	ClientResource  = "clients:%s"
 	Scope           = "hydra.clients"
 )
+
+func (h *Handler) PrefixResource(resource string) string {
+	if h.ResourcePrefix == "" {
+		h.ResourcePrefix = "rn:hydra"
+	}
+
+	if h.ResourcePrefix[len(h.ResourcePrefix)-1] == ':' {
+		h.ResourcePrefix = h.ResourcePrefix[:len(h.ResourcePrefix)-1]
+	}
+
+	return h.ResourcePrefix + ":" + resource
+}
 
 func (h *Handler) SetRoutes(r *httprouter.Router) {
 	r.GET(ClientsHandlerPath, h.List)
@@ -37,12 +64,14 @@ func (h *Handler) SetRoutes(r *httprouter.Router) {
 	r.DELETE(ClientsHandlerPath+"/:id", h.Delete)
 }
 
-// swagger:route POST /clients oauth2 clients createOAuthClient
+// swagger:route POST /clients oAuth2 createOAuth2Client
 //
-// Creates an OAuth 2.0 Client
+// Create an OAuth 2.0 client
 //
-// Be aware that an OAuth 2.0 Client may gain highly priviledged access if configured that way. This
-// endpoint should be well protected and only called by code you trust.
+// If you pass `client_secret` the secret will be used, otherwise a random secret will be generated. The secret will
+// be returned in the response and you will not be able to retrieve it later on. Write the secret down and keep
+// it somwhere safe.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -77,7 +106,7 @@ func (h *Handler) SetRoutes(r *httprouter.Router) {
 //       oauth2: hydra.clients
 //
 //     Responses:
-//       200: oauthClient
+//       200: oAuth2Client
 //       401: genericError
 //       403: genericError
 //       500: genericError
@@ -91,7 +120,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	}
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: ClientsResource,
+		Resource: h.PrefixResource(ClientsResource),
 		Action:   "create",
 		Context: map[string]interface{}{
 			"owner": c.Owner,
@@ -122,12 +151,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	h.H.WriteCreated(w, r, ClientsHandlerPath+"/"+c.GetID(), &c)
 }
 
-// swagger:route PUT /clients/{id} oauth2 clients updateOAuthClient
+// swagger:route PUT /clients/{id} oAuth2 updateOAuth2Client
 //
-// Updates an OAuth 2.0 Client
+// Update an OAuth 2.0 Client
 //
-// Be aware that an OAuth 2.0 Client may gain highly priviledged access if configured that way. This
-// endpoint should be well protected and only called by code you trust.
+// If you pass `client_secret` the secret will be updated and returned via the API. This is the only time you will
+// be able to retrieve the client secret, so write it down and keep it safe.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -162,7 +192,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 //       oauth2: hydra.clients
 //
 //     Responses:
-//       200: oauthClient
+//       200: oAuth2Client
 //       401: genericError
 //       403: genericError
 //       500: genericError
@@ -182,7 +212,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	}
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: ClientsResource,
+		Resource: h.PrefixResource(ClientsResource),
 		Action:   "update",
 		Context: ladon.Context{
 			"owner": o.Owner,
@@ -192,8 +222,12 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
+	var secret string
 	if len(c.Secret) > 0 && len(c.Secret) < 6 {
 		h.H.WriteError(w, r, errors.New("The client secret must be at least 6 characters long"))
+		return
+	} else {
+		secret = c.Secret
 	}
 
 	c.ID = ps.ByName("id")
@@ -202,14 +236,16 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
+	c.Secret = secret
 	h.H.WriteCreated(w, r, ClientsHandlerPath+"/"+c.GetID(), &c)
 }
 
-// swagger:route GET /clients oauth2 clients listOAuthClients
+// swagger:route GET /clients oAuth2 listOAuth2Clients
 //
-// Lists OAuth 2.0 Clients
+// List OAuth 2.0 Clients
 //
-// Never returns a client's secret.
+// This endpoint never returns passwords.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -233,7 +269,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request, ps httprouter.P
 //       oauth2: hydra.clients
 //
 //     Responses:
-//       200: clientsList
+//       200: oAuth2ClientList
 //       401: genericError
 //       403: genericError
 //       500: genericError
@@ -241,7 +277,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	var ctx = r.Context()
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: ClientsResource,
+		Resource: h.PrefixResource(ClientsResource),
 		Action:   "get",
 	}, Scope); err != nil {
 		h.H.WriteError(w, r, err)
@@ -254,19 +290,23 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		return
 	}
 
-	for k, cc := range c {
-		cc.Secret = ""
-		c[k] = cc
+	clients := make([]Client, len(c))
+	k := 0
+	for _, cc := range c {
+		clients[k] = cc
+		clients[k].Secret = ""
+		k++
 	}
 
-	h.H.Write(w, r, c)
+	h.H.Write(w, r, clients)
 }
 
-// swagger:route GET /clients/{id} oauth2 clients getOAuthClient
+// swagger:route GET /clients/{id} oAuth2 getOAuth2Client
 //
-// Fetches an OAuth 2.0 Client.
+// Retrieve an OAuth 2.0 Client.
 //
-// Never returns the client's secret.
+// This endpoint never returns passwords.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -282,7 +322,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 //
 //  ```
 //  {
-//    "resources": ["rn:hydra:clients:<some-id> "],
+//    "resources": ["rn:hydra:clients:<some-id>"],
 //    "actions": ["get"],
 //    "effect": "allow",
 //    "conditions": { "owner": { "type": "EqualsSubjectCondition" } }
@@ -301,7 +341,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 //       oauth2: hydra.clients
 //
 //     Responses:
-//       200: oauthClient
+//       200: oAuth2Client
 //       401: genericError
 //       403: genericError
 //       500: genericError
@@ -316,7 +356,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	}
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: fmt.Sprintf(ClientResource, id),
+		Resource: fmt.Sprintf(h.PrefixResource(ClientResource), id),
 		Action:   "get",
 		Context: ladon.Context{
 			"owner": c.GetOwner(),
@@ -330,7 +370,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	h.H.Write(w, r, c)
 }
 
-// swagger:route DELETE /clients/{id} oauth2 clients deleteOAuthClient
+// swagger:route DELETE /clients/{id} oAuth2 deleteOAuth2Client
 //
 // Deletes an OAuth 2.0 Client
 //
@@ -382,7 +422,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	}
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: fmt.Sprintf(ClientResource, id),
+		Resource: fmt.Sprintf(h.PrefixResource(ClientResource), id),
 		Action:   "delete",
 		Context: ladon.Context{
 			"owner": c.GetOwner(),

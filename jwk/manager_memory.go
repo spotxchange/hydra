@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package jwk
 
 import (
@@ -9,30 +23,30 @@ import (
 )
 
 type MemoryManager struct {
-	Keys map[string]*jose.JsonWebKeySet
+	Keys map[string]*jose.JSONWebKeySet
 	sync.RWMutex
 }
 
-func (m *MemoryManager) AddKey(set string, key *jose.JsonWebKey) error {
+func (m *MemoryManager) AddKey(set string, key *jose.JSONWebKey) error {
 	m.Lock()
 	defer m.Unlock()
 
 	m.alloc()
 	if m.Keys[set] == nil {
-		m.Keys[set] = &jose.JsonWebKeySet{Keys: []jose.JsonWebKey{}}
+		m.Keys[set] = &jose.JSONWebKeySet{Keys: []jose.JSONWebKey{}}
 	}
 	m.Keys[set].Keys = append(m.Keys[set].Keys, *key)
 	return nil
 }
 
-func (m *MemoryManager) AddKeySet(set string, keys *jose.JsonWebKeySet) error {
+func (m *MemoryManager) AddKeySet(set string, keys *jose.JSONWebKeySet) error {
 	for _, key := range keys.Keys {
 		m.AddKey(set, &key)
 	}
 	return nil
 }
 
-func (m *MemoryManager) GetKey(set, kid string) (*jose.JsonWebKeySet, error) {
+func (m *MemoryManager) GetKey(set, kid string) (*jose.JSONWebKeySet, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -47,12 +61,12 @@ func (m *MemoryManager) GetKey(set, kid string) (*jose.JsonWebKeySet, error) {
 		return nil, errors.Wrap(pkg.ErrNotFound, "")
 	}
 
-	return &jose.JsonWebKeySet{
+	return &jose.JSONWebKeySet{
 		Keys: result,
 	}, nil
 }
 
-func (m *MemoryManager) GetKeySet(set string) (*jose.JsonWebKeySet, error) {
+func (m *MemoryManager) GetKeySet(set string) (*jose.JSONWebKeySet, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -72,7 +86,7 @@ func (m *MemoryManager) DeleteKey(set, kid string) error {
 	}
 
 	m.Lock()
-	var results []jose.JsonWebKey
+	var results []jose.JSONWebKey
 	for _, key := range keys.Keys {
 		if key.KeyID != kid {
 			results = append(results)
@@ -94,6 +108,6 @@ func (m *MemoryManager) DeleteKeySet(set string) error {
 
 func (m *MemoryManager) alloc() {
 	if m.Keys == nil {
-		m.Keys = make(map[string]*jose.JsonWebKeySet)
+		m.Keys = make(map[string]*jose.JSONWebKeySet)
 	}
 }

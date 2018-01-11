@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
@@ -11,6 +25,7 @@ import (
 
 	"github.com/ory/hydra/cmd/cli"
 	"github.com/ory/hydra/config"
+	"github.com/ory/hydra/oauth2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -19,7 +34,7 @@ var cfgFile string
 
 var (
 	Version   = "dev-master"
-	BuildTime = time.Now().String()
+	BuildTime = time.Now().UTC().String()
 	GitHash   = "undefined"
 )
 
@@ -89,7 +104,7 @@ func initConfig() {
 	viper.SetDefault("CLIENT_ID", "")
 
 	viper.BindEnv("CONSENT_URL")
-	viper.SetDefault("CONSENT_URL", "")
+	viper.SetDefault("CONSENT_URL", oauth2.DefaultConsentPath)
 
 	viper.BindEnv("DATABASE_PLUGIN")
 	viper.SetDefault("DATABASE_PLUGIN", "")
@@ -118,6 +133,9 @@ func initConfig() {
 	viper.BindEnv("BCRYPT_COST")
 	viper.SetDefault("BCRYPT_COST", 10)
 
+	viper.BindEnv("OAUTH2_SHARE_ERROR_DEBUG")
+	viper.SetDefault("OAUTH2_SHARE_ERROR_DEBUG", false)
+
 	viper.BindEnv("ACCESS_TOKEN_LIFESPAN")
 	viper.SetDefault("ACCESS_TOKEN_LIFESPAN", "1h")
 
@@ -138,6 +156,18 @@ func initConfig() {
 
 	viper.BindEnv("LOG_FORMAT")
 	viper.SetDefault("LOG_FORMAT", "")
+
+	viper.BindEnv("RESOURCE_NAME_PREFIX")
+	viper.SetDefault("RESOURCE_NAME_PREFIX", "")
+
+	viper.BindEnv("OIDC_DISCOVERY_CLAIMS_SUPPORTED")
+	viper.SetDefault("OIDC_DISCOVERY_CLAIMS_SUPPORTED", "")
+
+	viper.BindEnv("OIDC_DISCOVERY_SCOPES_SUPPORTED")
+	viper.SetDefault("OIDC_DISCOVERY_SCOPES_SUPPORTED", "")
+
+	viper.BindEnv("OIDC_DISCOVERY_USERINFO_ENDPOINT")
+	viper.SetDefault("OIDC_DISCOVERY_USERINFO_ENDPOINT", "")
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {

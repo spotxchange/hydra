@@ -1,30 +1,40 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package metrics_test
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/ory/herodot"
+	"github.com/ory/hydra/health"
 	"github.com/ory/hydra/metrics"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/negroni"
-	//"time"
-	"math/rand"
-	"time"
-
-	"encoding/json"
-
-	"github.com/ory/herodot"
-	"github.com/ory/hydra/health"
-	"github.com/sirupsen/logrus"
 )
 
 func TestMiddleware(t *testing.T) {
-	rand.Seed(time.Now().Unix())
-	mw := metrics.NewMetricsManager(logrus.StandardLogger())
+	rand.Seed(time.Now().UTC().Unix())
+	mw := metrics.NewMetricsManager("", "", logrus.StandardLogger())
 	n := negroni.New()
 	r := httprouter.New()
 
@@ -45,9 +55,7 @@ func TestMiddleware(t *testing.T) {
 			require.NoError(t, err)
 			res.Body.Close()
 
-			mw.RLock()
 			require.Equal(t, http.StatusOK, res.StatusCode)
-			mw.RUnlock()
 		})
 	}
 
@@ -57,6 +65,7 @@ func TestMiddleware(t *testing.T) {
 	assert.EqualValues(t, i, mw.Snapshot.Responses)
 
 	mw.Snapshot.Update()
+
 	assert.True(t, mw.Snapshot.UpTime > 0)
 	assert.True(t, mw.Snapshot.GetUpTime() > 0)
 
@@ -72,18 +81,15 @@ func TestMiddleware(t *testing.T) {
 
 	assert.EqualValues(t, 1, mw.Snapshot.Path("/oauth2/introspect").Requests)
 
-	mw.Lock()
-	mw.Update()
 	assert.NotEqual(t, 0, mw.UpTime)
-	mw.Unlock()
 
-	out, _ := json.MarshalIndent(mw, "\t", "  ")
-	t.Logf("%s", out)
+	//out, _ := json.MarshalIndent(mw, "\t", "  ")
+	//t.Logf("%s", out)
 }
 
 func TestRacyMiddleware(t *testing.T) {
-	rand.Seed(time.Now().Unix())
-	mw := metrics.NewMetricsManager(logrus.StandardLogger())
+	rand.Seed(time.Now().UTC().Unix())
+	mw := metrics.NewMetricsManager("", "", logrus.StandardLogger())
 	n := negroni.New()
 	r := httprouter.New()
 

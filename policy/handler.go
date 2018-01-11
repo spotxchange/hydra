@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package policy
 
 import (
@@ -5,11 +19,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"strconv"
-
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
 	"github.com/ory/hydra/firewall"
+	"github.com/ory/hydra/pkg"
 	"github.com/ory/ladon"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
@@ -18,14 +31,27 @@ import (
 const (
 	endpoint         = "/policies"
 	scope            = "hydra.policies"
-	policyResource   = "rn:hydra:policies"
-	policiesResource = "rn:hydra:policies:%s"
+	policyResource   = "policies"
+	policiesResource = "policies:%s"
 )
 
 type Handler struct {
-	Manager ladon.Manager
-	H       herodot.Writer
-	W       firewall.Firewall
+	Manager        ladon.Manager
+	H              herodot.Writer
+	W              firewall.Firewall
+	ResourcePrefix string
+}
+
+func (h *Handler) PrefixResource(resource string) string {
+	if h.ResourcePrefix == "" {
+		h.ResourcePrefix = "rn:hydra"
+	}
+
+	if h.ResourcePrefix[len(h.ResourcePrefix)-1] == ':' {
+		h.ResourcePrefix = h.ResourcePrefix[:len(h.ResourcePrefix)-1]
+	}
+
+	return h.ResourcePrefix + ":" + resource
 }
 
 func (h *Handler) SetRoutes(r *httprouter.Router) {
@@ -36,11 +62,9 @@ func (h *Handler) SetRoutes(r *httprouter.Router) {
 	r.DELETE(endpoint+"/:id", h.Delete)
 }
 
-// swagger:route GET /policies policies listPolicies
+// swagger:route GET /policies policy listPolicies
 //
-// List access control policies
-//
-// Visit https://github.com/ory/ladon#usage for more information on policy usage.
+// List Access Control Policies
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -64,42 +88,21 @@ func (h *Handler) SetRoutes(r *httprouter.Router) {
 //       oauth2: hydra.policies
 //
 //     Responses:
-//       200: listPolicyResponse
+//       200: policyList
 //       401: genericError
 //       403: genericError
 //       500: genericError
 func (h *Handler) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var ctx = r.Context()
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: policyResource,
+		Resource: h.PrefixResource(policyResource),
 		Action:   "list",
 	}, scope); err != nil {
 		h.H.WriteError(w, r, err)
 		return
 	}
 
-	val := r.URL.Query().Get("offset")
-	if val == "" {
-		val = "0"
-	}
-
-	offset, err := strconv.ParseInt(val, 10, 64)
-	if err != nil {
-		h.H.WriteError(w, r, errors.WithStack(err))
-		return
-	}
-
-	val = r.URL.Query().Get("limit")
-	if val == "" {
-		val = "500"
-	}
-
-	limit, err := strconv.ParseInt(val, 10, 64)
-	if err != nil {
-		h.H.WriteError(w, r, errors.WithStack(err))
-		return
-	}
-
+	offset, limit := pkg.ParsePagination(r, 500, 0, 1000)
 	policies, err := h.Manager.GetAll(limit, offset)
 	if err != nil {
 		h.H.WriteError(w, r, errors.WithStack(err))
@@ -108,11 +111,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	h.H.Write(w, r, policies)
 }
 
-// swagger:route POST /policies policies createPolicy
+// swagger:route POST /policies policy createPolicy
 //
-// Create an access control policy
-//
-// Visit https://github.com/ory/ladon#usage for more information on policy usage.
+// Create an Access Control Policy
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -147,7 +148,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	ctx := r.Context()
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: policyResource,
+		Resource: h.PrefixResource(policyResource),
 		Action:   "create",
 	}, scope); err != nil {
 		h.H.WriteError(w, r, err)
@@ -170,11 +171,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	h.H.WriteCreated(w, r, "/policies/"+p.ID, &p)
 }
 
-// swagger:route GET /policies/{id} policies getPolicy
+// swagger:route GET /policies/{id} policy getPolicy
 //
-// Get an access control policy
-//
-// Visit https://github.com/ory/ladon#usage for more information on policy usage.
+// Get an Access Control Policy
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -206,7 +205,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	ctx := r.Context()
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: fmt.Sprintf(policiesResource, ps.ByName("id")),
+		Resource: fmt.Sprintf(h.PrefixResource(policiesResource), ps.ByName("id")),
 		Action:   "get",
 	}, scope); err != nil {
 		h.H.WriteError(w, r, err)
@@ -215,17 +214,19 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	policy, err := h.Manager.Get(ps.ByName("id"))
 	if err != nil {
+		if err.Error() == "Not found" {
+			h.H.WriteError(w, r, errors.WithStack(pkg.ErrNotFound))
+			return
+		}
 		h.H.WriteError(w, r, errors.WithStack(err))
 		return
 	}
 	h.H.Write(w, r, policy)
 }
 
-// swagger:route DELETE /policies/{id} policies deletePolicy
+// swagger:route DELETE /policies/{id} policy deletePolicy
 //
-// Delete an access control policy
-//
-// Visit https://github.com/ory/ladon#usage for more information on policy usage.
+// Delete an Access Control Policy
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -258,26 +259,24 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	id := ps.ByName("id")
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: fmt.Sprintf(policiesResource, id),
+		Resource: fmt.Sprintf(h.PrefixResource(policiesResource), id),
 		Action:   "get",
 	}, scope); err != nil {
-		h.H.WriteError(w, r, err)
+		h.H.WriteError(w, r, errors.WithStack(err))
 		return
 	}
 
 	if err := h.Manager.Delete(id); err != nil {
-		h.H.WriteError(w, r, errors.New("Could not delete client"))
+		h.H.WriteError(w, r, errors.WithStack(err))
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// swagger:route PUT /policies/{id} policies updatePolicy
+// swagger:route PUT /policies/{id} policy updatePolicy
 //
-// Update an access control policy
-//
-// Visit https://github.com/ory/ladon#usage for more information on policy usage.
+// Update an Access Control Polic
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -311,10 +310,10 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	var ctx = r.Context()
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: fmt.Sprintf(policiesResource, id),
+		Resource: fmt.Sprintf(h.PrefixResource(policiesResource), id),
 		Action:   "update",
 	}, scope); err != nil {
-		h.H.WriteError(w, r, err)
+		h.H.WriteError(w, r, errors.WithStack(err))
 		return
 	}
 

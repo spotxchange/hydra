@@ -1,6 +1,21 @@
-package oauth2
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package oauth2_test
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"testing"
@@ -8,6 +23,7 @@ import (
 	"github.com/ory/fosite"
 	"github.com/ory/hydra/client"
 	"github.com/ory/hydra/integration"
+	. "github.com/ory/hydra/oauth2"
 	"github.com/ory/hydra/pkg"
 	"github.com/sirupsen/logrus"
 )
@@ -28,6 +44,14 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
+	flag.Parse()
+	if !testing.Short() {
+		connectToPG()
+		connectToMySQL()
+		connectToPGConsent()
+		connectToMySQLConsent()
+	}
+
 	s := m.Run()
 	integration.KillAll()
 	os.Exit(s)
@@ -53,37 +77,36 @@ func connectToMySQL() {
 	clientManagers["mysql"] = s
 }
 
-// This needs to be the first test!!
-func TestConnectToStores(t *testing.T) {
-	connectToPG()
-	connectToMySQL()
-}
-
 func TestCreateGetDeleteAuthorizeCodes(t *testing.T) {
+	t.Parallel()
 	for k, m := range clientManagers {
 		t.Run(fmt.Sprintf("case=%s", k), TestHelperCreateGetDeleteAuthorizeCodes(m))
 	}
 }
 
 func TestCreateGetDeleteAccessTokenSession(t *testing.T) {
+	t.Parallel()
 	for k, m := range clientManagers {
 		t.Run(fmt.Sprintf("case=%s", k), TestHelperCreateGetDeleteAccessTokenSession(m))
 	}
 }
 
 func TestCreateGetDeleteOpenIDConnectSession(t *testing.T) {
+	t.Parallel()
 	for k, m := range clientManagers {
 		t.Run(fmt.Sprintf("case=%s", k), TestHelperCreateGetDeleteOpenIDConnectSession(m))
 	}
 }
 
 func TestCreateGetDeleteRefreshTokenSession(t *testing.T) {
+	t.Parallel()
 	for k, m := range clientManagers {
 		t.Run(fmt.Sprintf("case=%s", k), TestHelperCreateGetDeleteRefreshTokenSession(m))
 	}
 }
 
 func TestRevokeRefreshToken(t *testing.T) {
+	t.Parallel()
 	for k, m := range clientManagers {
 		t.Run(fmt.Sprintf("case=%s", k), TestHelperRevokeRefreshToken(m))
 	}

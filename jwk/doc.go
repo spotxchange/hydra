@@ -1,7 +1,27 @@
+// Package jwk implements JSON Web Key management capabilities
+//
+// A JSON Web Key (JWK) is a JavaScript Object Notation (JSON) data
+// structure that represents a cryptographic key. A JWK Set is a JSON data structure that
+// represents a set of JWKs. A JSON Web Key is identified by its set and key id. ORY Hydra uses this functionality
+// to store cryptographic keys used for TLS and JSON Web Tokens (such as OpenID Connect ID tokens).
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package jwk
 
-// swagger:parameters getJwkSetKey deleteJwkKey
-type swaggerJwkSetKeyQuery struct {
+// swagger:parameters getJsonWebKey deleteJsonWebKey
+type swaggerJsonWebKeyQuery struct {
 	// The kid of the desired key
 	// in: path
 	// required: true
@@ -13,7 +33,7 @@ type swaggerJwkSetKeyQuery struct {
 	Set string `json:"set"`
 }
 
-// swagger:parameters updateJwkSet
+// swagger:parameters updateJsonWebKeySet
 type swaggerJwkUpdateSet struct {
 	// The set
 	// in: path
@@ -24,8 +44,8 @@ type swaggerJwkUpdateSet struct {
 	Body swaggerJSONWebKeySet
 }
 
-// swagger:parameters updateJwkKey
-type swaggerJwkUpdateKey struct {
+// swagger:parameters updateJsonWebKey
+type swaggerJwkUpdateSetKey struct {
 	// The kid of the desired key
 	// in: path
 	// required: true
@@ -37,11 +57,11 @@ type swaggerJwkUpdateKey struct {
 	Set string `json:"set"`
 
 	// in: body
-	Body swaggerJSONWebKeySet
+	Body swaggerJSONWebKey
 }
 
-// swagger:parameters createJwkKey
-type swaggerJwkCreateKey struct {
+// swagger:parameters createJsonWebKeySet
+type swaggerJwkCreateSet struct {
 	// The set
 	// in: path
 	// required: true
@@ -51,7 +71,7 @@ type swaggerJwkCreateKey struct {
 	Body createRequest
 }
 
-// swagger:parameters getJwkSet deleteJwkSet
+// swagger:parameters getJsonWebKeySet deleteJsonWebKeySet
 type swaggerJwkSetQuery struct {
 	// The set
 	// in: path
@@ -59,7 +79,7 @@ type swaggerJwkSetQuery struct {
 	Set string `json:"set"`
 }
 
-// swagger:model jwkSet
+// swagger:model jsonWebKeySet
 type swaggerJSONWebKeySet struct {
 	// The value of the "keys" parameter is an array of JWK values.  By
 	// default, the order of the JWK values within the array does not imply
@@ -69,7 +89,7 @@ type swaggerJSONWebKeySet struct {
 	Keys []swaggerJSONWebKey `json:"keys"`
 }
 
-// swagger:model jwk
+// swagger:model jsonWebKey
 type swaggerJSONWebKey struct {
 	//  The "use" (public key use) parameter identifies the intended use of
 	// the public key. The "use" parameter is employed to indicate whether
@@ -113,16 +133,16 @@ type swaggerJSONWebKey struct {
 	// certificate.
 	X5c []string `json:"x5c,omitempty"`
 
-	K []byte `json:"k,omitempty"`
-	X []byte `json:"x,omitempty"`
-	Y []byte `json:"y,omitempty"`
-	N []byte `json:"n,omitempty"`
-	E []byte `json:"e,omitempty"`
+	K string `json:"k,omitempty"`
+	X string `json:"x,omitempty"`
+	Y string `json:"y,omitempty"`
+	N string `json:"n,omitempty"`
+	E string `json:"e,omitempty"`
 
-	D  []byte `json:"d,omitempty"`
-	P  []byte `json:"p,omitempty"`
-	Q  []byte `json:"q,omitempty"`
-	Dp []byte `json:"dp,omitempty"`
-	Dq []byte `json:"dq,omitempty"`
-	Qi []byte `json:"qi,omitempty"`
+	D  string `json:"d,omitempty"`
+	P  string `json:"p,omitempty"`
+	Q  string `json:"q,omitempty"`
+	Dp string `json:"dp,omitempty"`
+	Dq string `json:"dq,omitempty"`
+	Qi string `json:"qi,omitempty"`
 }

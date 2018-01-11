@@ -1,6 +1,18 @@
-package oauth2
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-import "context"
+package oauth2
 
 // Introspection contains an access token's session data as specified by IETF RFC 7662, see:
 // https://tools.ietf.org/html/rfc7662
@@ -47,7 +59,7 @@ type Introspection struct {
 	// authorized this token.
 	Username string `json:"username,omitempty"`
 
-	// Audience is a service-specific string identifier or list of string
+	// ClientID is a service-specific string identifier or list of string
 	// identifiers representing the intended audience for this token.
 	Audience string `json:"aud,omitempty"`
 
@@ -56,16 +68,4 @@ type Introspection struct {
 
 	// Extra is arbitrary data set by the session.
 	Extra map[string]interface{} `json:"ext,omitempty"`
-}
-
-// Introspector is capable of introspecting an access token according to IETF RFC 7662, see:
-// https://tools.ietf.org/html/rfc7662
-type Introspector interface {
-	// IntrospectToken performs a token introspection according to IETF RFC 7662, see: https://tools.ietf.org/html/rfc7662
-	//
-	//  func anyHttpHandler(w http.ResponseWriter, r *http.Request) {
-	//    ctx, err := introspector.IntrospectToken(context.Background(), introspector.TokenFromRequest(r), "photos", "files")
-	//    fmt.Sprintf("%s", ctx.Subject)
-	//  }
-	IntrospectToken(ctx context.Context, token string, scopes ...string) (*Introspection, error)
 }

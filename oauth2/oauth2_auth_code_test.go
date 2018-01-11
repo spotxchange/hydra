@@ -1,92 +1,179 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package oauth2_test
 
 import (
 	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
-	"net/http/cookiejar"
+	"encoding/json"
 
-	"net/url"
-	"strings"
+	"bytes"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
-	ejwt "github.com/ory/fosite/token/jwt"
-	"github.com/ory/hydra/jwk"
-	. "github.com/ory/hydra/oauth2"
-	"github.com/ory/hydra/pkg"
-	"github.com/pkg/errors"
+	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
 func TestAuthCode(t *testing.T) {
-	var code string
-	var validConsent bool
-	router.GET("/consent", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		tok, err := jwt.Parse(r.URL.Query().Get("challenge"), func(tt *jwt.Token) (interface{}, error) {
-			if _, ok := tt.Method.(*jwt.SigningMethodRSA); !ok {
-				return nil, errors.Errorf("Unexpected signing method: %v", tt.Header["alg"])
+	var consentHandler httprouter.Handle
+	var callbackHandler httprouter.Handle
+
+	router.GET("/consent", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		consentHandler(w, r, ps)
+	})
+	router.GET("/callback", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		callbackHandler(w, r, ps)
+	})
+
+	t.Run("case=test accept consent request", func(t *testing.T) {
+		var code string
+		var validConsent bool
+
+		consentHandler = func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			cr, response, err := consentClient.GetOAuth2ConsentRequest(r.URL.Query().Get("consent"))
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusOK, response.StatusCode)
+
+			assert.EqualValues(t, []string{"hydra.*", "offline", "openid"}, cr.RequestedScopes)
+			assert.Equal(t, r.URL.Query().Get("consent"), cr.Id)
+			assert.True(t, strings.Contains(cr.RedirectUrl, "oauth2/auth?client_id=app-client"))
+
+			response, err = consentClient.AcceptOAuth2ConsentRequest(r.URL.Query().Get("consent"), hydra.ConsentRequestAcceptance{
+				Subject:     "foo",
+				GrantScopes: []string{"hydra.*", "offline", "openid"},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusNoContent, response.StatusCode)
+
+			http.Redirect(w, r, cr.RedirectUrl, http.StatusFound)
+			validConsent = true
+		}
+
+		callbackHandler = func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			code = r.URL.Query().Get("code")
+			w.Write([]byte(r.URL.Query().Get("code")))
+		}
+
+		cookieJar, _ := cookiejar.New(nil)
+		req, err := http.NewRequest("GET", oauthConfig.AuthCodeURL("some-foo-state"), nil)
+		require.NoError(t, err)
+
+		resp, err := (&http.Client{Jar: cookieJar}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		_, err = ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		assert.True(t, validConsent)
+		require.NotEmpty(t, code)
+
+		token, err := oauthConfig.Exchange(oauth2.NoContext, code)
+		require.NoError(t, err, code)
+
+		t.Run("case=userinfo", func(t *testing.T) {
+
+			var makeRequest = func(req *http.Request) *http.Response {
+				resp, err = http.DefaultClient.Do(req)
+				require.NoError(t, err)
+				return resp
 			}
 
-			pk, err := keyManager.GetKey(ConsentChallengeKey, "public")
-			pkg.RequireError(t, false, err)
-			return jwk.MustRSAPublic(jwk.First(pk.Keys)), nil
+			var testSuccess = func(response *http.Response) {
+				defer resp.Body.Close()
+
+				require.Equal(t, http.StatusOK, resp.StatusCode)
+
+				var claims map[string]interface{}
+				require.NoError(t, json.NewDecoder(resp.Body).Decode(&claims))
+				assert.Equal(t, "foo", claims["sub"])
+			}
+
+			req, err = http.NewRequest("GET", ts.URL+"/userinfo", nil)
+			req.Header.Add("Authorization", "bearer "+token.AccessToken)
+			testSuccess(makeRequest(req))
+
+			req, err = http.NewRequest("POST", ts.URL+"/userinfo", nil)
+			req.Header.Add("Authorization", "bearer "+token.AccessToken)
+			testSuccess(makeRequest(req))
+
+			req, err = http.NewRequest("POST", ts.URL+"/userinfo", bytes.NewBuffer([]byte("access_token="+token.AccessToken)))
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			testSuccess(makeRequest(req))
+
+			req, err = http.NewRequest("GET", ts.URL+"/userinfo", nil)
+			req.Header.Add("Authorization", "bearer asdfg")
+			resp := makeRequest(req)
+			require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 		})
-		pkg.RequireError(t, false, err)
-		require.True(t, tok.Valid)
 
-		jwtClaims, ok := tok.Claims.(jwt.MapClaims)
-		require.True(t, ok)
-		require.NotEmpty(t, jwtClaims)
+		time.Sleep(time.Second * 5)
 
-		expl := map[string]interface{}{"foo": "bar", "baz": map[string]interface{}{"foo": "baz"}}
-		consent, err := signConsentToken(map[string]interface{}{
-			"jti":    jwtClaims["jti"],
-			"exp":    time.Now().Add(time.Hour).Unix(),
-			"iat":    time.Now().Unix(),
-			"sub":    "foo",
-			"aud":    "app-client",
-			"scp":    []string{"hydra", "offline"},
-			"at_ext": expl,
-			"id_ext": expl,
+		res, err := testRefresh(t, token)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		t.Run("duplicate code exchange fails", func(t *testing.T) {
+			token, err := oauthConfig.Exchange(oauth2.NoContext, code)
+			require.Error(t, err)
+			require.Nil(t, token)
 		})
-		pkg.RequireError(t, false, err)
-
-		http.Redirect(w, r, ejwt.ToString(jwtClaims["redir"])+"&consent="+consent, http.StatusFound)
-		validConsent = true
 	})
 
-	router.GET("/callback", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		code = r.URL.Query().Get("code")
-		w.Write([]byte(r.URL.Query().Get("code")))
+	t.Run("case=test deny consent request", func(t *testing.T) {
+		var validConsent bool
+
+		consentHandler = func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			cr, response, err := consentClient.GetOAuth2ConsentRequest(r.URL.Query().Get("consent"))
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusOK, response.StatusCode)
+
+			response, err = consentClient.RejectOAuth2ConsentRequest(r.URL.Query().Get("consent"), hydra.ConsentRequestRejection{Reason: "some reason"})
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusNoContent, response.StatusCode)
+
+			http.Redirect(w, r, cr.RedirectUrl, http.StatusFound)
+			validConsent = true
+		}
+		callbackHandler = func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			t.Logf("GOT URL: %s", r.URL.String())
+
+			assert.Equal(t, "some reason", r.URL.Query().Get("error_description"))
+			assert.Equal(t, "rejected_consent_request", r.URL.Query().Get("error"))
+			w.WriteHeader(http.StatusNoContent)
+		}
+
+		cookieJar, _ := cookiejar.New(nil)
+		req, err := http.NewRequest("GET", oauthConfig.AuthCodeURL("some-foo-state"), nil)
+		require.NoError(t, err)
+
+		resp, err := (&http.Client{Jar: cookieJar}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.True(t, validConsent)
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
-
-	cookieJar, _ := cookiejar.New(nil)
-	req, err := http.NewRequest("GET", oauthConfig.AuthCodeURL("some-foo-state"), nil)
-	pkg.RequireError(t, false, err)
-
-	resp, err := (&http.Client{Jar: cookieJar}).Do(req)
-	pkg.RequireError(t, false, err)
-	defer resp.Body.Close()
-
-	_, err = ioutil.ReadAll(resp.Body)
-	pkg.RequireError(t, false, err)
-
-	require.True(t, validConsent)
-	require.NotEmpty(t, code)
-
-	token, err := oauthConfig.Exchange(oauth2.NoContext, code)
-	pkg.RequireError(t, false, err, code)
-
-	time.Sleep(time.Second * 5)
-
-	res, err := testRefresh(t, token)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
 }
 
 func testRefresh(t *testing.T, token *oauth2.Token) (*http.Response, error) {

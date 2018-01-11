@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package group
 
 import (
@@ -9,6 +23,8 @@ import (
 
 func TestHelperManagers(m Manager) func(t *testing.T) {
 	return func(t *testing.T) {
+		t.Parallel()
+
 		_, err := m.GetGroup("4321")
 		assert.NotNil(t, err)
 
@@ -27,18 +43,30 @@ func TestHelperManagers(m Manager) func(t *testing.T) {
 		assert.EqualValues(t, c.Members, d.Members)
 		assert.EqualValues(t, c.ID, d.ID)
 
-		ds, err := m.FindGroupNames("foo")
+		ds, err := m.FindGroupsByMember("foo", 100, 0)
 		require.NoError(t, err)
 		assert.Len(t, ds, 2)
 
+		ds, err = m.FindGroupsByMember("foo", 1, 0)
+		require.NoError(t, err)
+		assert.Len(t, ds, 1)
+
+		ds, err = m.ListGroups(100, 0)
+		require.NoError(t, err)
+		assert.Len(t, ds, 2)
+
+		ds, err = m.ListGroups(1, 0)
+		require.NoError(t, err)
+		assert.Len(t, ds, 1)
+
 		assert.NoError(t, m.AddGroupMembers("1", []string{"baz"}))
 
-		ds, err = m.FindGroupNames("baz")
+		ds, err = m.FindGroupsByMember("baz", 100, 0)
 		require.NoError(t, err)
 		assert.Len(t, ds, 1)
 
 		assert.NoError(t, m.RemoveGroupMembers("1", []string{"baz"}))
-		ds, err = m.FindGroupNames("baz")
+		ds, err = m.FindGroupsByMember("baz", 100, 0)
 		require.NoError(t, err)
 		assert.Len(t, ds, 0)
 

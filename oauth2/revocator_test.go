@@ -1,13 +1,26 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package oauth2_test
 
 import (
+	"fmt"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 
-	"context"
-	"fmt"
+	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/fosite"
@@ -16,28 +29,38 @@ import (
 	"github.com/ory/herodot"
 	"github.com/ory/hydra/oauth2"
 	"github.com/ory/hydra/pkg"
-	"github.com/sirupsen/logrus"
+	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/oauth2/clientcredentials"
+	"github.com/stretchr/testify/require"
 )
 
-var (
-	revocators           = make(map[string]oauth2.Revocator)
-	nowRecovator         = time.Now().Round(time.Second)
-	tokensRecovator      = pkg.Tokens(3)
-	fositeStoreRecovator = storage.NewExampleStore()
-)
+func createAccessTokenSession(subject, client string, token string, expiresAt time.Time, fs *storage.MemoryStore, scopes fosite.Arguments) {
+	ar := fosite.NewAccessRequest(oauth2.NewSession(subject))
+	ar.GrantedScopes = fosite.Arguments{"core"}
+	if scopes != nil {
+		ar.GrantedScopes = scopes
+	}
+	ar.RequestedAt = time.Now().Round(time.Minute)
+	ar.Client = &fosite.DefaultClient{ID: client}
+	ar.Session.SetExpiresAt(fosite.AccessToken, expiresAt)
+	ar.Session.(*oauth2.Session).Extra = map[string]interface{}{"foo": "bar"}
+	fs.CreateAccessTokenSession(nil, token, ar)
+}
 
-func init() {
+func TestRevoke(t *testing.T) {
+	var (
+		tokens = pkg.Tokens(4)
+		store  = storage.NewExampleStore()
+		now    = time.Now().Round(time.Second)
+	)
 
-	r := httprouter.New()
-	serv := &oauth2.Handler{
+	handler := &oauth2.Handler{
 		OAuth2: compose.Compose(
 			fc,
-			fositeStoreRecovator,
+			store,
 			&compose.CommonStrategy{
 				CoreStrategy:               compose.NewOAuth2HMACStrategy(fc, []byte("1234567890123456789012345678901234567890")),
-				OpenIDConnectTokenStrategy: compose.NewOpenIDConnectStrategy(pkg.MustRSAKey()),
+				OpenIDConnectTokenStrategy: compose.NewOpenIDConnectStrategy(pkg.MustINSECURELOWENTROPYRSAKEYFORTEST()),
 			},
 			nil,
 			compose.OAuth2TokenIntrospectionFactory,
@@ -45,90 +68,63 @@ func init() {
 		),
 		H: herodot.NewJSONWriter(nil),
 	}
-	serv.SetRoutes(r)
-	ts = httptest.NewServer(r)
 
-	ar := fosite.NewAccessRequest(oauth2.NewSession("alice"))
-	ar.GrantedScopes = fosite.Arguments{"core"}
-	ar.RequestedAt = nowRecovator
-	ar.Client = &fosite.DefaultClient{ID: "siri"}
-	ar.Session.SetExpiresAt(fosite.AccessToken, nowRecovator.Add(time.Hour))
-	ar.Session.(*oauth2.Session).Extra = map[string]interface{}{"foo": "bar"}
-	fositeStoreRecovator.CreateAccessTokenSession(nil, tokensRecovator[0][0], ar)
+	router := httprouter.New()
+	handler.SetRoutes(router)
+	server := httptest.NewServer(router)
 
-	ar2 := fosite.NewAccessRequest(oauth2.NewSession("siri"))
-	ar2.GrantedScopes = fosite.Arguments{"core"}
-	ar2.RequestedAt = nowRecovator
-	ar2.Session.(*oauth2.Session).Extra = map[string]interface{}{"foo": "bar"}
-	ar2.Session.SetExpiresAt(fosite.AccessToken, nowRecovator.Add(time.Hour))
-	ar2.Client = &fosite.DefaultClient{ID: "siri"}
-	fositeStoreRecovator.CreateAccessTokenSession(nil, tokensRecovator[1][0], ar2)
+	createAccessTokenSession("alice", "my-client", tokens[0][0], now.Add(time.Hour), store, nil)
+	createAccessTokenSession("siri", "my-client", tokens[1][0], now.Add(time.Hour), store, nil)
+	createAccessTokenSession("siri", "my-client", tokens[2][0], now.Add(-time.Hour), store, nil)
+	createAccessTokenSession("siri", "doesnt-exist", tokens[3][0], now.Add(-time.Hour), store, nil)
 
-	ar3 := fosite.NewAccessRequest(oauth2.NewSession("siri"))
-	ar3.GrantedScopes = fosite.Arguments{"core"}
-	ar3.RequestedAt = nowRecovator
-	ar3.Session.(*oauth2.Session).Extra = map[string]interface{}{"foo": "bar"}
-	ar3.Client = &fosite.DefaultClient{ID: "doesnt-exist"}
-	ar3.Session.SetExpiresAt(fosite.AccessToken, nowRecovator.Add(-time.Hour))
-	fositeStoreRecovator.CreateAccessTokenSession(nil, tokensRecovator[2][0], ar3)
+	client := hydra.NewOAuth2ApiWithBasePath(server.URL)
+	client.Configuration.Username = "my-client"
+	client.Configuration.Password = "foobar"
 
-	ep, err := url.Parse(ts.URL)
-	if err != nil {
-		logrus.Fatalf("%s", err)
-	}
-	revocators["http"] = &oauth2.HTTPRecovator{
-		Endpoint: ep,
-		Config: &clientcredentials.Config{
-			ClientID:     "my-client",
-			ClientSecret: "foobar",
+	for k, c := range []struct {
+		token  string
+		assert func(*testing.T)
+	}{
+		{
+			token: "invalid",
 		},
-	}
-}
+		{
+			token: tokens[3][1],
+			assert: func(t *testing.T) {
+				assert.Len(t, store.AccessTokens, 4)
+			},
+		},
+		{
+			token: tokens[0][1],
+			assert: func(t *testing.T) {
+				assert.Len(t, store.AccessTokens, 3)
+			},
+		},
+		{
+			token: tokens[0][1],
+		},
+		{
+			token: tokens[2][1],
+			assert: func(t *testing.T) {
+				assert.Len(t, store.AccessTokens, 2)
+			},
+		},
+		{
+			token: tokens[1][1],
+			assert: func(t *testing.T) {
+				assert.Len(t, store.AccessTokens, 1)
+			},
+		},
+	} {
+		t.Run(fmt.Sprintf("case=%d", k), func(t *testing.T) {
+			response, err := client.RevokeOAuth2Token(c.token)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, response.StatusCode)
 
-func TestRevoke(t *testing.T) {
-	for k, w := range revocators {
-		for _, c := range []struct {
-			token     string
-			expectErr bool
-			assert    func(*testing.T)
-		}{
-			{
-				token:     "invalid",
-				expectErr: false,
-			},
-			{
-				token:     tokensRecovator[0][1],
-				expectErr: false,
-				assert: func(t *testing.T) {
-					assert.Len(t, fositeStoreRecovator.AccessTokens, 2)
-				},
-			},
-			{
-				token:     tokensRecovator[0][1],
-				expectErr: false,
-			},
-			{
-				token:     tokensRecovator[2][1],
-				expectErr: false,
-				assert: func(t *testing.T) {
-					assert.Len(t, fositeStoreRecovator.AccessTokens, 1)
-				},
-			},
-			{
-				token:     tokensRecovator[1][1],
-				expectErr: false,
-				assert: func(t *testing.T) {
-					assert.Len(t, fositeStoreRecovator.AccessTokens, 0)
-				},
-			},
-		} {
-			t.Run(fmt.Sprintf("case=%s", k), func(t *testing.T) {
-				err := w.RevokeToken(context.Background(), c.token)
-				pkg.AssertError(t, c.expectErr, err)
-				if c.assert != nil {
-					c.assert(t)
-				}
-			})
-		}
+			if c.assert != nil {
+				c.assert(t)
+			}
+		})
 	}
 }

@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package server
 
 import (
@@ -75,11 +89,13 @@ func newOAuth2Provider(c *config.Config, km jwk.Manager) fosite.OAuth2Provider {
 
 	rsaKey := jwk.MustRSAPrivate(jwk.First(keys.Keys))
 	fc := &compose.Config{
-		AccessTokenLifespan:   c.GetAccessTokenLifespan(),
-		RefreshTokenLifespan:  c.GetRefreshTokenLifespan(),
-		AuthorizeCodeLifespan: c.GetAuthCodeLifespan(),
-		IDTokenLifespan:       c.GetIDTokenLifespan(),
-		HashCost:              c.BCryptWorkFactor,
+		AccessTokenLifespan:        c.GetAccessTokenLifespan(),
+		RefreshTokenLifespan:       c.GetRefreshTokenLifespan(),
+		AuthorizeCodeLifespan:      c.GetAuthCodeLifespan(),
+		IDTokenLifespan:            c.GetIDTokenLifespan(),
+		HashCost:                   c.BCryptWorkFactor,
+		ScopeStrategy:              c.GetScopeStrategy(),
+		SendDebugMessagesToClients: c.SendOAuth2DebugMessagesToClients,
 	}
 	return compose.Compose(
 		fc,
@@ -101,7 +117,7 @@ func newOAuth2Provider(c *config.Config, km jwk.Manager) fosite.OAuth2Provider {
 	)
 }
 
-func newOAuth2Handler(c *config.Config, router *httprouter.Router, km jwk.Manager, o fosite.OAuth2Provider) *oauth2.Handler {
+func newOAuth2Handler(c *config.Config, router *httprouter.Router, cm oauth2.ConsentRequestManager, o fosite.OAuth2Provider) *oauth2.Handler {
 	if c.ConsentURL == "" {
 		proto := "https"
 		if c.ForceHTTP {
@@ -118,11 +134,15 @@ func newOAuth2Handler(c *config.Config, router *httprouter.Router, km jwk.Manage
 	pkg.Must(err, "Could not parse consent url %s.", c.ConsentURL)
 
 	handler := &oauth2.Handler{
-		ForcedHTTP: c.ForceHTTP,
-		OAuth2:     o,
+		ScopesSupported:  c.OpenIDDiscoveryScopesSupported,
+		UserinfoEndpoint: c.OpenIDDiscoveryUserinfoEndpoint,
+		ClaimsSupported:  c.OpenIDDiscoveryClaimsSupported,
+		ForcedHTTP:       c.ForceHTTP,
+		OAuth2:           o,
+		ScopeStrategy:    c.GetScopeStrategy(),
 		Consent: &oauth2.DefaultConsentStrategy{
 			Issuer:                   c.Issuer,
-			KeyManager:               km,
+			ConsentManager:           c.Context().ConsentManager,
 			DefaultChallengeLifespan: c.GetChallengeTokenLifespan(),
 			DefaultIDTokenLifespan:   c.GetIDTokenLifespan(),
 		},
@@ -132,6 +152,8 @@ func newOAuth2Handler(c *config.Config, router *httprouter.Router, km jwk.Manage
 		CookieStore:         sessions.NewCookieStore(c.GetCookieSecret()),
 		Issuer:              c.Issuer,
 		L:                   c.GetLogger(),
+		W:                   c.Context().Warden,
+		ResourcePrefix:      c.AccessControlResourcePrefix,
 	}
 
 	handler.SetRoutes(router)

@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package server
 
 import (
@@ -84,8 +98,8 @@ func getOrCreateTLSCertificate(cmd *cobra.Command, c *config.Config) tls.Certifi
 
 		private := jwk.First(keys.Key("private"))
 		private.Certificates = []*x509.Certificate{cert}
-		keys = &jose.JsonWebKeySet{
-			Keys: []jose.JsonWebKey{
+		keys = &jose.JSONWebKeySet{
+			Keys: []jose.JSONWebKey{
 				*private,
 				*jwk.First(keys.Key("public")),
 			},
@@ -132,8 +146,8 @@ func createSelfSignedCertificate(key interface{}) (cert *x509.Certificate, err e
 			Organization: []string{"Hydra"},
 			CommonName:   "Hydra",
 		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(time.Hour * 24 * 7),
+		NotBefore:             time.Now().UTC(),
+		NotAfter:              time.Now().UTC().Add(time.Hour * 24 * 7),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,

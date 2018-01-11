@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package warden
 
 import (
@@ -41,14 +55,29 @@ var notAllowed = struct {
 type WardenHandler struct {
 	H      herodot.Writer
 	Warden firewall.Firewall
+
+	ResourcePrefix string
+}
+
+func (h *WardenHandler) PrefixResource(resource string) string {
+	if h.ResourcePrefix == "" {
+		h.ResourcePrefix = "rn:hydra"
+	}
+
+	if h.ResourcePrefix[len(h.ResourcePrefix)-1] == ':' {
+		h.ResourcePrefix = h.ResourcePrefix[:len(h.ResourcePrefix)-1]
+	}
+
+	return h.ResourcePrefix + ":" + resource
 }
 
 func NewHandler(c *config.Config, router *httprouter.Router) *WardenHandler {
 	ctx := c.Context()
 
 	h := &WardenHandler{
-		H:      herodot.NewJSONWriter(c.GetLogger()),
-		Warden: ctx.Warden,
+		H:              herodot.NewJSONWriter(c.GetLogger()),
+		Warden:         ctx.Warden,
+		ResourcePrefix: c.AccessControlResourcePrefix,
 	}
 	h.SetRoutes(router)
 
@@ -60,13 +89,14 @@ func (h *WardenHandler) SetRoutes(r *httprouter.Router) {
 	r.POST(AllowedHandlerPath, h.Allowed)
 }
 
-// swagger:route POST /warden/allowed warden wardenAllowed
+// swagger:route POST /warden/allowed warden doesWardenAllowAccessRequest
 //
-// Check if a subject is allowed to do something
+// Check if an access request is valid (without providing an access token)
 //
-// Checks if an arbitrary subject is allowed to perform an action on a resource. This endpoint requires a subject,
-// a resource name, an action name and a context.If the subject is not allowed to perform the action on the resource,
-// this endpoint returns a 200 response with `{ "allowed": false} }`.
+// Checks if a subject (typically a user or a service) is allowed to perform an action on a resource. This endpoint requires a subject,
+// a resource name, an action name and a context. If the subject is not allowed to perform the action on the resource,
+// this endpoint returns a 200 response with `{ "allowed": false}`, otherwise `{ "allowed": true }` is returned.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -90,14 +120,14 @@ func (h *WardenHandler) SetRoutes(r *httprouter.Router) {
 //       oauth2: hydra.warden
 //
 //     Responses:
-//       200: wardenAllowedResponse
+//       200: wardenAccessRequestResponse
 //       401: genericError
 //       403: genericError
 //       500: genericError
 func (h *WardenHandler) Allowed(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var ctx = r.Context()
 	if _, err := h.Warden.TokenAllowed(ctx, h.Warden.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: "rn:hydra:warden:allowed",
+		Resource: h.PrefixResource("warden:allowed"),
 		Action:   "decide",
 	}, "hydra.warden"); err != nil {
 		h.H.WriteError(w, r, err)
@@ -121,18 +151,20 @@ func (h *WardenHandler) Allowed(w http.ResponseWriter, r *http.Request, _ httpro
 	h.H.Write(w, r, &res)
 }
 
-// swagger:route POST /warden/token/allowed warden wardenTokenAllowed
+// swagger:route POST /warden/token/allowed warden doesWardenAllowTokenAccessRequest
 //
-// Check if the subject of a token is allowed to do something
+// Check if an access request is valid (providing an access token)
 //
-// Checks if a token is valid and if the token owner is allowed to perform an action on a resource.
+// Checks if a token is valid and if the token subject is allowed to perform an action on a resource.
 // This endpoint requires a token, a scope, a resource name, an action name and a context.
 //
-// If a token is expired/invalid, has not been granted the requested scope or the subject is not allowed to
-// perform the action on the resource, this endpoint returns a 200 response with `{ "allowed": false} }`.
 //
-// Extra data set through the `at_ext` claim in the consent response will be included in the response.
-// The `id_ext` claim will never be returned by this endpoint.
+// If a token is expired/invalid, has not been granted the requested scope or the subject is not allowed to
+// perform the action on the resource, this endpoint returns a 200 response with `{ "allowed": false}`.
+//
+//
+// Extra data set through the `accessTokenExtra` field in the consent flow will be included in the response.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -156,14 +188,14 @@ func (h *WardenHandler) Allowed(w http.ResponseWriter, r *http.Request, _ httpro
 //       oauth2: hydra.warden
 //
 //     Responses:
-//       200: wardenTokenAllowedResponse
+//       200: wardenTokenAccessRequestResponse
 //       401: genericError
 //       403: genericError
 //       500: genericError
 func (h *WardenHandler) TokenAllowed(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 	_, err := h.Warden.TokenAllowed(ctx, h.Warden.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: "rn:hydra:warden:token:allowed",
+		Resource: h.PrefixResource("warden:token:allowed"),
 		Action:   "decide",
 	}, "hydra.warden")
 	if err != nil {

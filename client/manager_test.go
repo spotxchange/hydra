@@ -1,63 +1,46 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package client_test
 
 import (
+	"flag"
 	"fmt"
 	"log"
-	"net/http/httptest"
-	"net/url"
 	"os"
 	"testing"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/ory/fosite"
-	"github.com/ory/herodot"
 	. "github.com/ory/hydra/client"
-	"github.com/ory/hydra/compose"
 	"github.com/ory/hydra/integration"
-	"github.com/ory/ladon"
 )
 
-var clientManagers = map[string]Storage{}
-
-var ts *httptest.Server
+var clientManagers = map[string]Manager{}
 
 func init() {
 	clientManagers["memory"] = &MemoryManager{
 		Clients: map[string]Client{},
 		Hasher:  &fosite.BCrypt{},
 	}
-
-	localWarden, httpClient := compose.NewMockFirewall("foo", "alice", fosite.Arguments{Scope}, &ladon.DefaultPolicy{
-		ID:        "1",
-		Subjects:  []string{"alice"},
-		Resources: []string{"rn:hydra:clients<.*>"},
-		Actions:   []string{"create", "get", "delete", "update"},
-		Effect:    ladon.AllowAccess,
-	})
-
-	s := &Handler{
-		Manager: &MemoryManager{
-			Clients: map[string]Client{},
-			Hasher:  &fosite.BCrypt{},
-		},
-		H: herodot.NewJSONWriter(nil),
-		W: localWarden,
-	}
-
-	routing := httprouter.New()
-	s.SetRoutes(routing)
-	ts = httptest.NewServer(routing)
-
-	u, _ := url.Parse(ts.URL + ClientsHandlerPath)
-	clientManagers["http"] = &HTTPManager{
-		Client:   httpClient,
-		Endpoint: u,
-	}
 }
 
 func TestMain(m *testing.M) {
-	connectToPG()
-	connectToMySQL()
+	flag.Parse()
+	if !testing.Short() {
+		connectToPG()
+		connectToMySQL()
+	}
 
 	s := m.Run()
 	integration.KillAll()
@@ -85,6 +68,12 @@ func connectToPG() {
 	clientManagers["postgres"] = s
 }
 
+func TestCreateGetDeleteClient(t *testing.T) {
+	for k, m := range clientManagers {
+		t.Run(fmt.Sprintf("case=%s", k), TestHelperCreateGetDeleteClient(k, m))
+	}
+}
+
 func TestClientAutoGenerateKey(t *testing.T) {
 	for k, m := range clientManagers {
 		t.Run(fmt.Sprintf("case=%s", k), TestHelperClientAutoGenerateKey(k, m))
@@ -92,16 +81,7 @@ func TestClientAutoGenerateKey(t *testing.T) {
 }
 
 func TestAuthenticateClient(t *testing.T) {
-	var mem = &MemoryManager{
-		Clients: map[string]Client{},
-		Hasher:  &fosite.BCrypt{},
-	}
-
-	TestHelperClientAuthenticate("", mem)(t)
-}
-
-func TestCreateGetDeleteClient(t *testing.T) {
 	for k, m := range clientManagers {
-		t.Run(fmt.Sprintf("case=%s", k), TestHelperCreateGetDeleteClient(k, m))
+		t.Run(fmt.Sprintf("case=%s", k), TestHelperClientAuthenticate(k, m))
 	}
 }

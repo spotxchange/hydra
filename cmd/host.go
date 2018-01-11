@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
@@ -17,6 +31,7 @@ you can also set environments by prepending key value pairs: "KEY=VALUE KEY2=VAL
 
 All possible controls are listed below. The host process additionally exposes a few flags, which are listed below
 the controls section.
+
 
 CORE CONTROLS
 =============
@@ -46,8 +61,9 @@ CORE CONTROLS
 
 - FORCE_ROOT_CLIENT_CREDENTIALS: On first start up, Hydra generates a root client with random id and secret. Use
 	this environment variable in the form of "FORCE_ROOT_CLIENT_CREDENTIALS=id:secret" to set
-	the client id and secret yourself.
-	Example: FORCE_ROOT_CLIENT_CREDENTIALS=admin:kf0AKfm12fas3F-.f
+	the client id and secret yourself. Please www-url-encode the id
+	and the secret: "FORCE_ROOT_CLIENT_CREDENTIALS=urlencode(id):urlencode(secret)".
+	Example: FORCE_ROOT_CLIENT_CREDENTIALS=admin:h6hy92tK4dQcZ2EaFsGNRtqg
 
 - PORT: The port hydra should listen on.
 	Defaults to PORT=4444
@@ -68,6 +84,10 @@ CORE CONTROLS
 - DISABLE_TELEMETRY: Set to "1" to disable telemetry collection and sharing - for more information please
 	visit https://ory.gitbooks.io/hydra/content/telemetry.html
 	Example: DISABLE_TELEMETRY="1"
+
+- RESOURCE_NAME_PREFIX: Allows the alternation of the "rn:hydra:" prefix in all resource names declared by ORY Hydra.
+	Defaults to "rn:hydra" if empty and removes the last trailing colon.
+	Example: RESOURCE_NAME_PREFIX="resources:my-domain.com"
 
 
 OAUTH2 CONTROLS
@@ -98,6 +118,28 @@ OAUTH2 CONTROLS
 - CHALLENGE_TOKEN_LIFESPAN: Lifespan of OAuth2 consent tokens. Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 	Defaults to CHALLENGE_TOKEN_LIFESPAN=10m
 
+- SCOPE_STRATEGY: Set this to DEPRECATED_HIERARCHICAL_SCOPE_STRATEGY to enable the deprecated hierarchical scope strategy.
+	This is required if you do not want to migrate to the new wildcard strategy.
+
+- OAUTH2_SHARE_ERROR_DEBUG: Set this to true if you want to share error debugging information with your OAuth 2.0 clients.
+	Keep in mind that debug information is very valuable when dealing with errors, but might also expose database error
+	codes and similar errors.
+	Defaults to OAUTH2_SHARE_ERROR_DEBUG=false
+
+
+OPENID CONNECT CONTROLS
+===============
+
+- OIDC_DISCOVERY_CLAIMS_SUPPORTED: A comma separated list of supported claims to be advertised at the OpenID Connect
+	Discovery endpoint /.well-known/openid-configuration. Always adds "sub" to the supported claims.
+
+- OIDC_DISCOVERY_SCOPES_SUPPORTED: A comma separated list of supported scopes to be advertised at the OpenID Connect
+	Discovery endpoint /.well-known/openid-configuration. Always adds "offline", "openid" to the supported scopes.
+
+- OIDC_DISCOVERY_USERINFO_ENDPOINT: A URL of the userinfo endpoint to be advertised at the OpenID Connect
+	Discovery endpoint /.well-known/openid-configuration. Defaults to ORY Hydra's userinfo endpoint at /userinfo.
+	Set this value if you want to handle this endpoint yourself.
+
 
 HTTPS CONTROLS
 ==============
@@ -119,6 +161,30 @@ HTTPS CONTROLS
 
 - HTTPS_TLS_KEY: A pem encoded TLS key passed as string. Can be used instead of HTTPS_TLS_KEY_PATH.
 	Example: HTTPS_TLS_KEY="-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIIFDjBABgkqhkiG9w0BBQ0wMzAbBgkqhkiG9w0BBQwwDg..."
+
+
+CORS CONTROLS
+==============
+- CORS_ALLOWED_ORIGINS: A list of origins (comma separated values) a cross-domain request can be executed from.
+	If the special * value is present in the list, all origins will be allowed. An origin may contain a wildcard (*)
+	to replace 0 or more characters (i.e.: http://*.domain.com). Usage of wildcards implies a small performance penality.
+	Only one wildcard can be used per origin. The default value is *.
+	Example: CORS_ALLOWED_ORIGINS=http://*.domain.com,http://*.domain2.com
+
+- CORS_ALLOWED_METHODS: A list of methods  (comma separated values) the client is allowed to use with cross-domain
+	requests. Default value is simple methods (GET and POST).
+	Example: CORS_ALLOWED_METHODS=POST,GET,PUT
+
+- CORS_ALLOWED_CREDENTIALS: Indicates whether the request can include user credentials like cookies, HTTP authentication
+	or client side SSL certificates. The default is false.
+
+- CORS_DEBUG: Debugging flag adds additional output to debug server side CORS issues.
+
+- CORS_MAX_AGE: Indicates how long (in seconds) the results of a preflight request can be cached. The default is 0 which stands for no max age.
+
+- CORS_ALLOWED_HEADERS: A list of non simple headers (comma separated values) the client is allowed to use with cross-domain requests.
+
+- CORS_EXPOSED_HEADERS: Indicates which headers (comma separated values) are safe to expose to the API of a CORS API specification.
 
 
 DEBUG CONTROLS
