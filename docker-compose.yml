@@ -14,21 +14,33 @@ version: '2'
 
 services:
 
+  hydra-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile-alpine
+    links:
+      - postgresd:postgresd
+    command:
+      migrate sql postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable
+    restart: on-failure
+
   hydra:
     build:
       context: .
-      dockerfile: Dockerfile-demo
+      dockerfile: Dockerfile-alpine
     links:
       - postgresd:postgresd
 #     Uncomment the following line to use mysql instead.
 #      - mysqld:mysqld
-#     Uncomment the following line to use redis instead.
-#      - redisd:redisd
+    depends_on:
+      - hydra-migrate
     volumes:
       - hydravolume:/root
     ports:
       - "4444:4444"
       - "4445:4445"
+    command:
+      host --dangerous-auto-logon --dangerous-force-http --disable-telemetry
     environment:
       - LOG_LEVEL=debug
       - ISSUER=http://localhost:4444
@@ -36,10 +48,8 @@ services:
       - DATABASE_URL=postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable
 #     Uncomment the following line to use mysql instead.
 #      - DATABASE_URL=mysql://root:secret@tcp(mysqld:3306)/mysql?parseTime=true
-#     Uncomment the following line to use redis instead.
-#      - DATABASE_URL=redis://redisd:6379/0
       - FORCE_ROOT_CLIENT_CREDENTIALS=admin:demo-password
-      - SYSTEM_SECRET=some-very-insecure-secret
+      - SYSTEM_SECRET=youReallyNeedToChangeThis
     restart: unless-stopped
 
   consent:
@@ -48,7 +58,7 @@ services:
       - HYDRA_CLIENT_ID=admin
       - HYDRA_CLIENT_SECRET=demo-password
       - NODE_TLS_REJECT_UNAUTHORIZED=0
-    image: oryd/hydra-consent-app-express:v0.1.6
+    image: oryd/hydra-consent-app-express:v0.10.0-alpha.7
     links:
       - hydra
     ports:
@@ -69,10 +79,6 @@ services:
 #    image: mysql:5.7
 #    environment:
 #      - MYSQL_ROOT_PASSWORD=secret
-
-#  Uncomment the following section to use redis instead.
-#  redisd:
-#    image: redis:3.2
 
 volumes:
   hydravolume:

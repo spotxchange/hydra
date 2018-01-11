@@ -1,8 +1,23 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package group
 
 import (
 	"sync"
 
+	"github.com/ory/hydra/pkg"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 )
@@ -32,7 +47,7 @@ func (m *MemoryManager) CreateGroup(g *Group) error {
 
 func (m *MemoryManager) GetGroup(id string) (*Group, error) {
 	if g, ok := m.Groups[id]; !ok {
-		return nil, errors.New("not found")
+		return nil, errors.WithStack(pkg.ErrNotFound)
 	} else {
 		return &g, nil
 	}
@@ -76,20 +91,45 @@ func (m *MemoryManager) RemoveGroupMembers(group string, subjects []string) erro
 	return m.CreateGroup(g)
 }
 
-func (m *MemoryManager) FindGroupNames(subject string) ([]string, error) {
+func (m *MemoryManager) FindGroupsByMember(subject string, limit, offset int64) ([]Group, error) {
 	if m.Groups == nil {
 		m.Groups = map[string]Group{}
 	}
 
-	var res []string
+	res := make([]Group, 0)
 	for _, g := range m.Groups {
 		for _, s := range g.Members {
 			if s == subject {
-				res = append(res, g.ID)
+				res = append(res, g)
 				break
 			}
 		}
 	}
 
-	return res, nil
+	if offset+limit > int64(len(res)) {
+		limit = int64(len(res))
+		offset = 0
+	}
+
+	return res[offset:limit], nil
+}
+
+func (m *MemoryManager) ListGroups(limit, offset int64) ([]Group, error) {
+	if m.Groups == nil {
+		m.Groups = map[string]Group{}
+	}
+
+	i := int64(0)
+	res := make([]Group, len(m.Groups))
+	for _, g := range m.Groups {
+		res[i] = g
+		i++
+	}
+
+	if offset+limit > int64(len(res)) {
+		limit = int64(len(res))
+		offset = 0
+	}
+
+	return res[offset:limit], nil
 }

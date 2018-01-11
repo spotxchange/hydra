@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package client
 
 import (
@@ -8,7 +22,7 @@ import (
 
 // Client represents an OAuth 2.0 Client.
 //
-// swagger:model oauthClient
+// swagger:model oAuth2Client
 type Client struct {
 	// ID is the id for this client.
 	ID string `json:"id" gorethink:"id"`
@@ -22,7 +36,7 @@ type Client struct {
 	// that they need to write the secret down as it will not be made available again.
 	Secret string `json:"client_secret,omitempty" gorethink:"client_secret"`
 
-	// RedirectURIs is an array of allowed redirect urls for the client, for example: http://mydomain/oauth/callback .
+	// RedirectURIs is an array of allowed redirect urls for the client, for example http://mydomain/oauth/callback .
 	RedirectURIs []string `json:"redirect_uris" gorethink:"redirect_uris"`
 
 	// GrantTypes is an array of grant types the client is allowed to use.
@@ -40,7 +54,7 @@ type Client struct {
 	// described in Section 3.3 of OAuth 2.0 [RFC6749]) that the client
 	// can use when requesting access tokens.
 	//
-	// Pattern: ([a-zA-Z0-9\.]+\s)+
+	// Pattern: ([a-zA-Z0-9\.\*]+\s?)+
 	Scope string `json:"scope" gorethink:"scope"`
 
 	// Owner is a string identifying the owner of the OAuth 2.0 Client.
@@ -87,7 +101,7 @@ func (c *Client) GetHashedSecret() []byte {
 }
 
 func (c *Client) GetScopes() fosite.Arguments {
-	return fosite.Arguments(strings.Split(c.Scope, " "))
+	return fosite.Arguments(strings.Fields(c.Scope))
 }
 
 func (c *Client) GetGrantTypes() fosite.Arguments {

@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package metrics
 
 import (
@@ -6,11 +20,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pborman/uuid"
 	"github.com/segmentio/analytics-go"
 	"github.com/urfave/negroni"
 	//"github.com/ory/hydra/cmd"
+	"crypto/sha512"
+	"encoding/base64"
+	"strings"
+
 	"github.com/ory/hydra/pkg"
+	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,21 +40,38 @@ type MetricsManager struct {
 	buildVersion string
 	buildHash    string
 	buildTime    string
+	issuerURL    string
+	databaseURL  string
+	internalID   string
 }
 
-func NewMetricsManager(l logrus.FieldLogger) *MetricsManager {
+func shouldCommit(issuerURL string, databaseURL string) bool {
+	return !(databaseURL == "" || databaseURL == "memory" || issuerURL == "" || strings.Contains(issuerURL, "localhost"))
+}
+
+func identify(issuerURL string) string {
+	hash := sha512.New()
+	hash.Write([]byte(issuerURL))
+	return base64.URLEncoding.EncodeToString(hash.Sum(nil))
+}
+
+func NewMetricsManager(issuerURL string, databaseURL string, l logrus.FieldLogger) *MetricsManager {
 	l.Info("Setting up telemetry - for more information please visit https://ory.gitbooks.io/hydra/content/telemetry.html")
+
 	mm := &MetricsManager{
 		Snapshot: &Snapshot{
 			MemorySnapshot: &MemorySnapshot{},
-			ID:             uuid.New(),
+			ID:             identify(issuerURL),
 			Metrics:        newMetrics(),
 			HTTPMetrics:    newHttpMetrics(),
 			Paths:          map[string]*PathMetrics{},
-			start:          time.Now(),
+			start:          time.Now().UTC(),
 		},
-		Segment: analytics.New("JYilhx5zP8wrzfykUinXrSUbo5cRA3aA"),
-		Logger:  l,
+		internalID:  uuid.New(),
+		Segment:     analytics.New("h8dRH3kVCWKkIFWydBmWsyYHR4M0u0vr"),
+		Logger:      l,
+		issuerURL:   issuerURL,
+		databaseURL: databaseURL,
 	}
 	return mm
 }
@@ -47,6 +82,11 @@ const (
 )
 
 func (sw *MetricsManager) RegisterSegment(version, hash, buildTime string) {
+	if !shouldCommit(sw.issuerURL, sw.databaseURL) {
+		sw.Logger.Info("Detected local environment, skipping telemetry commit")
+		return
+	}
+
 	time.Sleep(defaultWait)
 	if err := pkg.Retry(sw.Logger, time.Minute*2, defaultWait, func() error {
 		return sw.Segment.Identify(&analytics.Identify{
@@ -59,6 +99,7 @@ func (sw *MetricsManager) RegisterSegment(version, hash, buildTime string) {
 				"version":        version,
 				"hash":           hash,
 				"buildTime":      buildTime,
+				"instanceId":     sw.internalID,
 			},
 			Context: map[string]interface{}{
 				"ip": "0.0.0.0",
@@ -71,12 +112,17 @@ func (sw *MetricsManager) RegisterSegment(version, hash, buildTime string) {
 }
 
 func (sw *MetricsManager) TickKeepAlive() {
+	if !shouldCommit(sw.issuerURL, sw.databaseURL) {
+		sw.Logger.Info("Detected local environment, skipping telemetry commit")
+		return
+	}
+
 	time.Sleep(defaultWait)
 	for {
 		if err := sw.Segment.Track(&analytics.Track{
 			Event:       "keep-alive",
 			AnonymousId: sw.ID,
-			Properties:  map[string]interface{}{},
+			Properties:  map[string]interface{}{"instanceId": sw.internalID},
 			Context:     map[string]interface{}{"ip": "0.0.0.0"},
 		}); err != nil {
 			sw.Logger.WithError(err).Debug("Could not send telemetry keep alive")
@@ -87,6 +133,11 @@ func (sw *MetricsManager) TickKeepAlive() {
 }
 
 func (sw *MetricsManager) CommitTelemetry() {
+	if !shouldCommit(sw.issuerURL, sw.databaseURL) {
+		sw.Logger.Info("Detected local environment, skipping telemetry commit")
+		return
+	}
+
 	for {
 		time.Sleep(defaultWait)
 		sw.Update()
@@ -94,16 +145,17 @@ func (sw *MetricsManager) CommitTelemetry() {
 			Event:       "telemetry",
 			AnonymousId: sw.ID,
 			Properties: map[string]interface{}{
-				"upTime":    sw.UpTime,
-				"requests":  sw.Requests,
-				"responses": sw.Responses,
-				"paths":     sw.Paths,
-				"methods":   sw.Methods,
-				"sizes":     sw.Sizes,
-				"status":    sw.Status,
-				"latencies": sw.Latencies,
-				"raw":       sw,
-				"memory":    sw.MemorySnapshot,
+				"upTime":     sw.UpTime,
+				"requests":   sw.Requests,
+				"responses":  sw.Responses,
+				"paths":      sw.Paths,
+				"methods":    sw.Methods,
+				"sizes":      sw.Sizes,
+				"status":     sw.Status,
+				"latencies":  sw.Latencies,
+				"raw":        sw,
+				"memory":     sw.MemorySnapshot,
+				"instanceId": sw.internalID,
 			},
 			Context: map[string]interface{}{
 				"ip": "0.0.0.0",
@@ -119,19 +171,17 @@ func (sw *MetricsManager) ServeHTTP(rw http.ResponseWriter, r *http.Request, nex
 	method := r.Method
 	path := r.RequestURI
 
-	go func() {
-		sw.Lock()
-		defer sw.Unlock()
-		sw.Snapshot.AddRequest()
-		sw.Snapshot.AddMethodRequest(method)
-		sw.Snapshot.Path(r.RequestURI).AddRequest()
-		sw.Snapshot.Path(r.RequestURI).AddMethodRequest(method)
-	}()
+	sw.Lock()
+	sw.Snapshot.AddRequest()
+	sw.Snapshot.AddMethodRequest(method)
+	sw.Snapshot.Path(r.RequestURI).AddRequest()
+	sw.Snapshot.Path(r.RequestURI).AddMethodRequest(method)
+	sw.Unlock()
 
 	// Latency
-	start := time.Now()
+	start := time.Now().UTC()
 	next(rw, r)
-	latency := time.Now().Sub(start) / time.Millisecond
+	latency := time.Now().UTC().Sub(start) / time.Millisecond
 
 	// Collecting request info
 	res := rw.(negroni.ResponseWriter)

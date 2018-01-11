@@ -1,42 +1,52 @@
-// Package warden decides if access requests should be allowed or denied. In a scientific taxonomy, the warden
-// is classified as a Policy Decision Point. THe warden's primary goal is to implement `github.com/ory-am/hydra/firewall.Firewall`.
-// To read up on the warden, go to:
+// Package warden implements endpoints capable of making access control decisions based on Access Control Policies
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
 //
-// - https://ory-am.gitbooks.io/hydra/content/policy.html
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// - http://docs.hydra13.apiary.io/#reference/warden:-access-control-for-resource-providers
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-// Contains source files:
-//
-// - handler.go: A HTTP handler capable of validating access tokens.
-//
-// - warden_http.go: A Go API using HTTP to validate access tokens.
-//
-// - warden_local.go: A Go API using storage managers to validate access tokens.
-//
-// - warden_test.go: Functional tests all of the above.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package warden
 
-import "github.com/ory/hydra/firewall"
+import (
+	"github.com/ory/hydra/firewall"
+)
 
-// The allowed response
-// swagger:response wardenAllowedResponse
-type swaggerWardenAllowedResponse struct {
+// The warden access request response
+// swagger:response wardenAccessRequestResponse
+type swaggerWardenAccessRequestResponseParameters struct {
 	// in: body
-	Body struct {
-		// Allowed is true if the request is allowed or false otherwise
-		Allowed bool `json:"allowed"`
-	}
+	Body swaggerWardenAccessRequestResponse
 }
 
-// swagger:parameters wardenAllowed
-type swaggerWardenAllowedParameters struct {
+// The warden access request response
+// swagger:model wardenAccessRequestResponse
+type swaggerWardenAccessRequestResponse struct {
+	// Allowed is true if the request is allowed and false otherwise.
+	Allowed bool `json:"allowed"`
+}
+
+// swagger:parameters doesWardenAllowAccessRequest
+type swaggerDoesWardenAllowAccessRequestParameters struct {
 	// in: body
 	Body firewall.AccessRequest
 }
 
-// swagger:model wardenTokenAllowedBody
-type swaggerWardenTokenAllowedBody struct {
+// swagger:parameters doesWardenAllowTokenAccessRequest
+type swaggerDoesWardenAllowTokenAccessRequestParameters struct {
+	// in: body
+	Body swaggerWardenTokenAccessRequest
+}
+
+// swagger:model wardenTokenAccessRequest
+type swaggerWardenTokenAccessRequest struct {
 	// Scopes is an array of scopes that are requried.
 	Scopes []string `json:"scopes"`
 
@@ -53,20 +63,38 @@ type swaggerWardenTokenAllowedBody struct {
 	Context map[string]interface{} `json:"context"`
 }
 
-// swagger:parameters wardenTokenAllowed
-type swaggerWardenTokenAllowedParameters struct {
+// The warden access request (with token) response
+// swagger:response wardenTokenAccessRequestResponse
+type swaggerWardenTokenAccessRequestResponse struct {
 	// in: body
-	Body swaggerWardenTokenAllowedBody
+	Body swaggerWardenTokenAccessRequestResponsePayload
 }
 
-// The token allowed response
-// swagger:response wardenTokenAllowedResponse
-type swaggerWardenTokenAllowedResponse struct {
-	// in: body
-	Body struct {
-		*firewall.Context
+// The warden access request (with token) response
+// swagger:model wardenTokenAccessRequestResponse
+type swaggerWardenTokenAccessRequestResponsePayload struct {
+	// Subject is the identity that authorized issuing the token, for example a user or an OAuth2 app.
+	// This is usually a uuid but you can choose a urn or some other id too.
+	Subject string `json:"subject"`
 
-		// Allowed is true if the request is allowed or false otherwise
-		Allowed bool `json:"allowed"`
-	}
+	// GrantedScopes is a list of scopes that the subject authorized when asked for consent.
+	GrantedScopes []string `json:"grantedScopes"`
+
+	// Issuer is the id of the issuer, typically an hydra instance.
+	Issuer string `json:"issuer"`
+
+	// ClientID is the id of the OAuth2 client that requested the token.
+	ClientID string `json:"clientId"`
+
+	// IssuedAt is the token creation time stamp.
+	IssuedAt string `json:"issuedAt"`
+
+	// ExpiresAt is the expiry timestamp.
+	ExpiresAt string `json:"expiresAt"`
+
+	// Extra represents arbitrary session data.
+	Extra map[string]interface{} `json:"accessTokenExtra"`
+
+	// Allowed is true if the request is allowed and false otherwise.
+	Allowed bool `json:"allowed"`
 }

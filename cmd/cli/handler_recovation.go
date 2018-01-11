@@ -1,51 +1,60 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cli
 
 import (
-	"context"
-	"crypto/tls"
 	"fmt"
 	"net/http"
 
+	"crypto/tls"
+
 	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/oauth2"
-	"github.com/ory/hydra/pkg"
+	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2/clientcredentials"
 )
 
 type RevocationHandler struct {
 	Config *config.Config
-	M      *oauth2.HTTPRecovator
 }
 
 func newRevocationHandler(c *config.Config) *RevocationHandler {
-	return &RevocationHandler{
-		Config: c,
-		M:      &oauth2.HTTPRecovator{},
-	}
+	return &RevocationHandler{Config: c}
 }
 
 func (h *RevocationHandler) RevokeToken(cmd *cobra.Command, args []string) {
-	if ok, _ := cmd.Flags().GetBool("skip-tls-verify"); ok {
-		// fmt.Println("Warning: Skipping TLS Certificate Verification.")
-		h.M.Client = &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}}
-	}
-
-	h.M.Endpoint = h.Config.Resolve("/oauth2/revoke")
-	h.M.Config = &clientcredentials.Config{
-		ClientID:     h.Config.ClientID,
-		ClientSecret: h.Config.ClientSecret,
-	}
-
 	if len(args) != 1 {
 		fmt.Print(cmd.UsageString())
 		return
 	}
 
+	handler := hydra.NewOAuth2ApiWithBasePath(h.Config.ClusterURL)
+	handler.Configuration.Username = h.Config.ClientID
+	handler.Configuration.Password = h.Config.ClientSecret
+
+	if skip, _ := cmd.Flags().GetBool("skip-tls-verify"); skip {
+		handler.Configuration.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+	}
+
+	if term, _ := cmd.Flags().GetBool("fake-tls-termination"); term {
+		handler.Configuration.DefaultHeader["X-Forwarded-Proto"] = "https"
+	}
+
 	token := args[0]
-	err := h.M.RevokeToken(context.Background(), args[0])
-	pkg.Must(err, "Could not revoke token: %s", err)
+	response, err := handler.RevokeOAuth2Token(args[0])
+	checkResponse(response, err, http.StatusOK)
 	fmt.Printf("Revoked token %s", token)
 }

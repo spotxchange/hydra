@@ -17,7 +17,7 @@ and low resource consumption. ORY Hydra *is not* an identity provider (user sign
 but connects to your existing identity provider through a [consent app](https://ory.gitbooks.io/hydra/content/oauth2.html#consent-app-flow).
 Implementing the consent app in a different language is easy, and exemplary consent apps
 ([Go](https://github.com/ory/hydra-consent-app-go), [Node](https://github.com/ory/hydra-consent-app-express)) and
-SDKs ([Go](https://github.com/ory/hydra/tree/update-docs/sdk), [Node](https://github.com/ory/hydra-js)) are provided.
+[SDKs](https://ory.gitbooks.io/hydra/content/sdk.html) are provided.
 
 Besides mitigating various attack vectors, such as database compromisation and OAuth 2.0 weaknesses, ORY Hydra is
 able to securely manage JSON Web Keys, and has a sophisticated policy-based access control you can use if you want to.
@@ -25,9 +25,8 @@ able to securely manage JSON Web Keys, and has a sophisticated policy-based acce
 
 
 <p align="left">
-    <a href="https://travis-ci.org/ory/hydra"><img src="https://travis-ci.org/ory/hydra.svg?branch=master" alt="Build Status"></a>
+    <a href="https://circleci.com/gh/ory/hydra/tree/master"><img src="https://circleci.com/gh/ory/hydra/tree/master.svg?style=shield" alt="Build Status"></a>
     <a href="https://coveralls.io/github/ory/hydra?branch=master"><img src="https://coveralls.io/repos/ory/hydra/badge.svg?branch=master&service=github" alt="Coverage Status"></a>
-    <a href="https://codeclimate.com/github/ory/hydra"><img src="https://codeclimate.com/github/ory/hydra/badges/gpa.svg" alt="Code Climate"></a>
     <a href="https://goreportcard.com/report/github.com/ory/hydra"><img src="https://goreportcard.com/badge/github.com/ory/hydra" alt="Go Report Card"></a>
     <a href="https://bestpractices.coreinfrastructure.org/projects/364"><img src="https://bestpractices.coreinfrastructure.org/projects/364/badge" alt="CII Best Practices"></a>
 </p>
@@ -48,19 +47,20 @@ able to securely manage JSON Web Keys, and has a sophisticated policy-based acce
     - [Using Docker](#using-docker)
     - [Building from source](#building-from-source)
 - [Security](#security)
+  - [Disclosing vulnerabilities](#disclosing-vulnerabilities)
 - [Telemetry](#telemetry)
-- [Sponsors & Adopters](#sponsors-&-adopters)
+- [Sponsors](#sponsors)
   - [Sponsorship](#sponsorship)
-  - [Sponsors](#sponsors)
-  - [Adopters](#adopters)
+  - [Sponsors](#sponsors-1)
 - [Documentation](#documentation)
   - [Guide](#guide)
   - [HTTP API documentation](#http-api-documentation)
+  - [Upgrading and Changelog](#upgrading-and-changelog)
   - [Command line documentation](#command-line-documentation)
   - [Develop](#develop)
 - [Reception](#reception)
 - [Libraries and third-party projects](#libraries-and-third-party-projects)
-- [Blog posts & articles](#blog-posts-&-articles)
+- [Blog posts & articles](#blog-posts--articles)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -163,14 +163,13 @@ Hydra is a twelve factor OAuth2 and OpenID Connect provider
 
 #### Building from source
 
-If you wish to compile ORY Hydra yourself, you need to install and set up [Go 1.8+](https://golang.org/) and add `$GOPATH/bin`
-to your `$PATH`. To do so, run the following commands in a shell (bash, sh, cmd.exe, ...):
+If you wish to compile ORY Hydra yourself, you need to install and set up [Go 1.9+](https://golang.org/) and add `$GOPATH/bin`
+to your `$PATH` as well as [golang/dep](http://github.com/golang/dep). To do so, run the following commands in a shell (bash, sh, cmd.exe, ...):
 
 ```
 go get -d -u github.com/ory/hydra
-go get github.com/Masterminds/glide
 cd $GOPATH/src/github.com/ory/hydra
-glide install
+dep ensure
 go install github.com/ory/hydra
 hydra
 ```
@@ -189,12 +188,17 @@ ORY Hydra is trusted by companies all around the world, has a vibrant community 
 each day. Of course, we also compiled a security guide with more details on cryptography and security concepts.
 Read [the security guide now](https://ory.gitbooks.io/hydra/content/security.html).
 
+### Disclosing vulnerabilities
+
+If you think you found a security vulnerability, please refrain from posting it publicly on the forums, the chat, or GitHub
+and send us an email to [hi@ory.am](mailto:hi@ory.am) instead.
+
 ## Telemetry
 
 ORY Hydra collects summarized, anonymized telemetry which can optionally be turned off. Click [here](https://ory.gitbooks.io/hydra/content/telemetry.html)
 to learn more.
 
-## Sponsors & Adopters
+## Sponsors
 
 ORY Hydra is open source with a permissive license. We are a dedicated, young but also experienced team of developers
 in the area of cloud computing and internet security. Please support our mission for a safer web and become a sponsor, buy an
@@ -221,18 +225,6 @@ every year. At ORY, we use [Auth0](https://auth0.com) in conjunction with ORY Hy
 
 <br clear="all"/>
 
-### Adopters
-
-ORY Hydra is battle-tested in production systems. This is a curated list of ORY Hydra adopters. [Tell us](mailto:hi@ory.am) if
-you think that your company should be listed here.
-
-<img src="https://www.arduino.cc/en/uploads/Trademark/ArduinoCommunityLogo.png" align="left" width="30%" alt="arduino.cc"/>
-
-<p>Arduino is an open-source electronics platform based on easy-to-use hardware and software. It's intended
-for anyone making interactive projects. ORY Hydra secures Arduino's developer platform.</p>
-
-<br clear="all"/>
-
 ## Documentation
 
 ### Guide
@@ -242,6 +234,11 @@ The Guide is available on [GitBook](https://ory.gitbooks.io/hydra/content/).
 ### HTTP API documentation
 
 The HTTP API is documented at [Apiary](http://docs.hydra13.apiary.io/).
+
+### Upgrading and Changelog
+
+New releases might introduce breaking changes. To help you identify and incorporate those changes, we document these
+changes in [UPGRADE.md](./UPGRADE.md) and [CHANGELOG.md](./CHANGELOG.md).
 
 ### Command line documentation
 
@@ -253,10 +250,9 @@ Developing with ORY Hydra is as easy as:
 
 ```
 go get -d -u github.com/ory/hydra
-go get github.com/Masterminds/glide
 cd $GOPATH/src/github.com/ory/hydra
-glide install
-go test $(glide novendor)
+dep ensure
+go test ./...
 ```
 
 Then run it with in-memory database:
@@ -288,7 +284,6 @@ Fosite (which is what this is based on) is a very good implementation from a sec
 ## Libraries and third-party projects
 
 Official:
-* [Consent App SDK For NodeJS](https://github.com/ory/hydra-js)
 * [Consent App Example written in Go](https://github.com/ory/hydra-consent-app-go)
 * [Exemplary Consent App with Express and NodeJS](https://github.com/ory/hydra-consent-app-express)
 

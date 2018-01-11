@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package server
 
 import (
@@ -5,8 +19,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-
 	"os"
+
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
@@ -23,9 +39,26 @@ import (
 	"github.com/ory/hydra/warden/group"
 	"github.com/ory/ladon"
 	"github.com/pkg/errors"
+	"github.com/rs/cors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/urfave/negroni"
 )
+
+func parseCorsOptions() cors.Options {
+	allowCredentials, _ := strconv.ParseBool(viper.GetString("CORS_ALLOWED_CREDENTIALS"))
+	debug, _ := strconv.ParseBool(viper.GetString("CORS_DEBUG"))
+	maxAge, _ := strconv.Atoi(viper.GetString("CORS_MAX_AGE"))
+	return cors.Options{
+		AllowedOrigins:   strings.Split(viper.GetString("CORS_ALLOWED_ORIGINS"), ","),
+		AllowedMethods:   strings.Split(viper.GetString("CORS_ALLOWED_METHODS"), ","),
+		AllowedHeaders:   strings.Split(viper.GetString("CORS_ALLOWED_HEADERS"), ","),
+		ExposedHeaders:   strings.Split(viper.GetString("CORS_EXPOSED_HEADERS"), ","),
+		AllowCredentials: allowCredentials,
+		MaxAge:           maxAge,
+		Debug:            debug,
+	}
+}
 
 func RunHost(c *config.Config) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
@@ -80,10 +113,11 @@ func RunHost(c *config.Config) func(cmd *cobra.Command, args []string) {
 		n.Use(negronilogrus.NewMiddlewareFromLogger(logger, c.Issuer))
 		n.UseFunc(serverHandler.rejectInsecureRequests)
 		n.UseHandler(router)
+		corsHandler := cors.New(parseCorsOptions()).Handler(n)
 
 		var srv = graceful.WithDefaults(&http.Server{
 			Addr:    c.GetAddress(),
-			Handler: context.ClearHandler(n),
+			Handler: context.ClearHandler(corsHandler),
 			TLSConfig: &tls.Config{
 				Certificates: []tls.Certificate{getOrCreateTLSCertificate(cmd, c)},
 			},
@@ -112,6 +146,7 @@ type Handler struct {
 	Clients *client.Handler
 	Keys    *jwk.Handler
 	OAuth2  *oauth2.Handler
+	Consent *oauth2.ConsentSessionHandler
 	Policy  *policy.Handler
 	Groups  *group.Handler
 	Warden  *warden.WardenHandler
@@ -125,6 +160,7 @@ func (h *Handler) registerRoutes(router *httprouter.Router) {
 
 	// Set up dependencies
 	injectJWKManager(c)
+	injectConsentManager(c)
 	clientsManager := newClientManager(c)
 	injectFositeStore(c, clientsManager)
 	oauth2Provider := newOAuth2Provider(c, ctx.KeyManager)
@@ -145,19 +181,17 @@ func (h *Handler) registerRoutes(router *httprouter.Router) {
 	h.Clients = newClientHandler(c, router, clientsManager)
 	h.Keys = newJWKHandler(c, router)
 	h.Policy = newPolicyHandler(c, router)
-	h.OAuth2 = newOAuth2Handler(c, router, ctx.KeyManager, oauth2Provider)
+	h.Consent = newConsentHanlder(c, router)
+	h.OAuth2 = newOAuth2Handler(c, router, ctx.ConsentManager, oauth2Provider)
 	h.Warden = warden.NewHandler(c, router)
 	h.Groups = &group.Handler{
-		H:       herodot.NewJSONWriter(c.GetLogger()),
-		W:       ctx.Warden,
-		Manager: ctx.GroupManager,
+		H:              herodot.NewJSONWriter(c.GetLogger()),
+		W:              ctx.Warden,
+		Manager:        ctx.GroupManager,
+		ResourcePrefix: c.AccessControlResourcePrefix,
 	}
 	h.Groups.SetRoutes(router)
 	_ = newHealthHandler(c, router)
-
-	// Create root account if new install
-	createRS256KeysIfNotExist(c, oauth2.ConsentEndpointKey, "private", "sig")
-	createRS256KeysIfNotExist(c, oauth2.ConsentChallengeKey, "private", "sig")
 
 	h.createRootIfNewInstall(c)
 }

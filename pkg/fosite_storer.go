@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package pkg
 
 import (
@@ -9,18 +23,11 @@ import (
 )
 
 type FositeStorer interface {
-	oauth2.AccessTokenStorage
 	fosite.Storage
-	oauth2.AuthorizeCodeGrantStorage
-	oauth2.RefreshTokenGrantStorage
+	oauth2.CoreStorage
 	openid.OpenIDConnectRequestStorage
 
 	RevokeRefreshToken(ctx context.Context, requestID string) error
 
-	// RevokeAccessToken revokes an access token as specified in:
-	// https://tools.ietf.org/html/rfc7009#section-2.1
-	// If the token passed to the request
-	// is an access token, the server MAY revoke the respective refresh
-	// token as well.
 	RevokeAccessToken(ctx context.Context, requestID string) error
 }

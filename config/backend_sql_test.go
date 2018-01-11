@@ -1,6 +1,21 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package config
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/url"
@@ -9,7 +24,9 @@ import (
 	"testing"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/ory/dockertest"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -23,8 +40,11 @@ var (
 var resources []*dockertest.Resource
 
 func TestMain(m *testing.M) {
-	mysql = bootstrapMySQL()
-	postgres = bootstrapPostgres()
+	flag.Parse()
+	if !testing.Short() {
+		mysql = bootstrapMySQL()
+		postgres = bootstrapPostgres()
+	}
 
 	s := m.Run()
 	killAll()
@@ -50,6 +70,11 @@ func TestCleanQueryURL(t *testing.T) {
 }
 
 func TestSQLConnection(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode.")
+		return
+	}
+
 	for _, tc := range []struct {
 		s *SQLConnection
 		d string
@@ -115,6 +140,16 @@ func killAll() {
 }
 
 func bootstrapMySQL() *url.URL {
+	if uu := os.Getenv("TEST_DATABASE_MYSQL"); uu != "" {
+		log.Println("Found mysql test database config, skipping dockertest...")
+		_, err := sqlx.Open("postgres", uu)
+		if err != nil {
+			log.Fatalf("Could not connect to bootstrapped database: %s", err)
+		}
+		u, _ := url.Parse("mysql://" + uu)
+		return u
+	}
+
 	var db *sqlx.DB
 	var err error
 	var urls string
@@ -150,6 +185,16 @@ func bootstrapMySQL() *url.URL {
 }
 
 func bootstrapPostgres() *url.URL {
+	if uu := os.Getenv("TEST_DATABASE_POSTGRESQL"); uu != "" {
+		log.Println("Found postgresql test database config, skipping dockertest...")
+		_, err := sqlx.Open("postgres", uu)
+		if err != nil {
+			log.Fatalf("Could not connect to bootstrapped database: %s", err)
+		}
+		u, _ := url.Parse(uu)
+		return u
+	}
+
 	var db *sqlx.DB
 	var err error
 	var urls string

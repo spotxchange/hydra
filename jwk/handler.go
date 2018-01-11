@@ -1,3 +1,17 @@
+// Copyright © 2017 Aeneas Rekkas <aeneas+oss@aeneas.io>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package jwk
 
 import (
@@ -18,20 +32,32 @@ const (
 )
 
 type Handler struct {
-	Manager    Manager
-	Generators map[string]KeyGenerator
-	H          herodot.Writer
-	W          firewall.Firewall
+	Manager        Manager
+	Generators     map[string]KeyGenerator
+	H              herodot.Writer
+	W              firewall.Firewall
+	ResourcePrefix string
+}
+
+func (h *Handler) PrefixResource(resource string) string {
+	if h.ResourcePrefix == "" {
+		h.ResourcePrefix = "rn:hydra"
+	}
+
+	if h.ResourcePrefix[len(h.ResourcePrefix)-1] == ':' {
+		h.ResourcePrefix = h.ResourcePrefix[:len(h.ResourcePrefix)-1]
+	}
+
+	return h.ResourcePrefix + ":" + resource
 }
 
 func (h *Handler) GetGenerators() map[string]KeyGenerator {
 	if h.Generators == nil || len(h.Generators) == 0 {
 		h.Generators = map[string]KeyGenerator{
 			"RS256": &RS256Generator{},
-			"ES521": &ECDSA521Generator{},
-			"HS256": &HS256Generator{
-				Length: 32,
-			},
+			"ES512": &ECDSA512Generator{},
+			"HS256": &HS256Generator{},
+			"HS512": &HS512Generator{},
 		}
 	}
 	return h.Generators
@@ -51,8 +77,9 @@ func (h *Handler) SetRoutes(r *httprouter.Router) {
 	r.DELETE("/keys/:set", h.DeleteKeySet)
 }
 
+// swagger:model jsonWebKeySetGeneratorRequest
 type createRequest struct {
-	// The algorithm to be used for creating the key. Supports "RS256", "ES521" and "HS256"
+	// The algorithm to be used for creating the key. Supports "RS256", "ES512", "HS512", and "HS256"
 	// required: true
 	// in: body
 	Algorithm string `json:"alg"`
@@ -67,11 +94,9 @@ type joseWebKeySetRequest struct {
 	Keys []json.RawMessage `json:"keys"`
 }
 
-// swagger:route GET /.well-known/jwks.json jwks oauth2 openid-connect WellKnown
+// swagger:route GET /.well-known/jwks.json oAuth2 wellKnown
 //
-// Public JWKs
-//
-// Use this method if you do not want to let Hydra generate the JWKs for you, but instead save your own.
+// Get list of well known JSON Web Keys
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -95,19 +120,19 @@ type joseWebKeySetRequest struct {
 //       oauth2: hydra.keys.get
 //
 //     Responses:
-//       200: jwkSet
+//       200: jsonWebKeySet
 //       401: genericError
 //       403: genericError
 //       500: genericError
 func (h *Handler) WellKnown(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var ctx = context.Background()
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: "rn:hydra:keys:" + IDTokenKeyName + ":public",
+		Resource: h.PrefixResource("keys:" + IDTokenKeyName + ":public"),
 		Action:   "get",
 	}, "hydra.keys.get"); err != nil {
 		if err := h.W.IsAllowed(ctx, &firewall.AccessRequest{
 			Subject:  "",
-			Resource: "rn:hydra:keys:" + IDTokenKeyName + ":public",
+			Resource: h.PrefixResource("keys:" + IDTokenKeyName + ":public"),
 			Action:   "get",
 		}); err != nil {
 			h.H.WriteError(w, r, err)
@@ -126,9 +151,12 @@ func (h *Handler) WellKnown(w http.ResponseWriter, r *http.Request, ps httproute
 	h.H.Write(w, r, keys)
 }
 
-// swagger:route GET /keys/{set}/{kid} jwks getJwkSetKey
+// swagger:route GET /keys/{set}/{kid} jsonWebKey getJsonWebKey
 //
-// Retrieves a JSON Web Key Set matching the set and the kid
+// Retrieve a JSON Web Key
+//
+// This endpoint can be used to retrieve JWKs stored in ORY Hydra.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -152,7 +180,7 @@ func (h *Handler) WellKnown(w http.ResponseWriter, r *http.Request, ps httproute
 //       oauth2: hydra.keys.get
 //
 //     Responses:
-//       200: jwkSet
+//       200: jsonWebKeySet
 //       401: genericError
 //       403: genericError
 //       500: genericError
@@ -162,12 +190,12 @@ func (h *Handler) GetKey(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	var keyName = ps.ByName("key")
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: "rn:hydra:keys:" + setName + ":" + keyName,
+		Resource: h.PrefixResource("keys:" + setName + ":" + keyName),
 		Action:   "get",
 	}, "hydra.keys.get"); err != nil {
 		if err := h.W.IsAllowed(ctx, &firewall.AccessRequest{
 			Subject:  "",
-			Resource: "rn:hydra:keys:" + setName + ":" + keyName,
+			Resource: h.PrefixResource("keys:" + setName + ":" + keyName),
 			Action:   "get",
 		}); err != nil {
 			h.H.WriteError(w, r, err)
@@ -186,9 +214,12 @@ func (h *Handler) GetKey(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	h.H.Write(w, r, keys)
 }
 
-// swagger:route GET /keys/{set} jwks getJwkSet
+// swagger:route GET /keys/{set} jsonWebKey getJsonWebKeySet
 //
-// Retrieves a JSON Web Key Set matching the set
+// Retrieve a JSON Web Key Set
+//
+// This endpoint can be used to retrieve JWK Sets stored in ORY Hydra.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -212,7 +243,7 @@ func (h *Handler) GetKey(w http.ResponseWriter, r *http.Request, ps httprouter.P
 //       oauth2: hydra.keys.get
 //
 //     Responses:
-//       200: jwkSet
+//       200: jsonWebKeySet
 //       401: genericError
 //       403: genericError
 //       500: genericError
@@ -228,7 +259,7 @@ func (h *Handler) GetKeySet(w http.ResponseWriter, r *http.Request, ps httproute
 
 	for _, key := range keys.Keys {
 		if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-			Resource: "rn:hydra:keys:" + setName + ":" + key.KeyID,
+			Resource: h.PrefixResource("keys:" + setName + ":" + key.KeyID),
 			Action:   "get",
 		}, "hydra.keys.get"); err != nil {
 			h.H.WriteError(w, r, err)
@@ -239,9 +270,16 @@ func (h *Handler) GetKeySet(w http.ResponseWriter, r *http.Request, ps httproute
 	h.H.Write(w, r, keys)
 }
 
-// swagger:route POST /keys/{set} jwks createJwkKey
+// swagger:route POST /keys/{set} jsonWebKey createJsonWebKeySet
 //
 // Generate a new JSON Web Key
+//
+// This endpoint is capable of generating JSON Web Key Sets for you. There a different strategies available, such as
+// symmetric cryptographic keys (HS256, HS512) and asymetric cryptographic keys (RS256, ECDSA).
+//
+//
+// If the specified JSON Web Key Set does not exist, it will be created.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -265,7 +303,7 @@ func (h *Handler) GetKeySet(w http.ResponseWriter, r *http.Request, ps httproute
 //       oauth2: hydra.keys.create
 //
 //     Responses:
-//       200: jwkSet
+//       200: jsonWebKeySet
 //       401: genericError
 //       403: genericError
 //       500: genericError
@@ -275,7 +313,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	var set = ps.ByName("set")
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: "rn:hydra:keys:" + set,
+		Resource: h.PrefixResource("keys:" + set),
 		Action:   "create",
 	}, "hydra.keys.create"); err != nil {
 		h.H.WriteError(w, r, err)
@@ -306,11 +344,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	h.H.WriteCreated(w, r, fmt.Sprintf("%s://%s/keys/%s", r.URL.Scheme, r.URL.Host, set), keys)
 }
 
-// swagger:route PUT /keys/{set} jwks updateJwkSet
+// swagger:route PUT /keys/{set} jsonWebKey updateJsonWebKeySet
 //
-// Updates a JSON Web Key Set
+// Update a JSON Web Key Set
 //
 // Use this method if you do not want to let Hydra generate the JWKs for you, but instead save your own.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -334,18 +373,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, ps httprouter.P
 //       oauth2: hydra.keys.update
 //
 //     Responses:
-//       200: jwkSet
+//       200: jsonWebKeySet
 //       401: genericError
 //       403: genericError
 //       500: genericError
 func (h *Handler) UpdateKeySet(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var ctx = context.Background()
 	var requests joseWebKeySetRequest
-	var keySet = new(jose.JsonWebKeySet)
+	var keySet = new(jose.JSONWebKeySet)
 	var set = ps.ByName("set")
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: "rn:hydra:keys:" + set,
+		Resource: h.PrefixResource("keys:" + set),
 		Action:   "update",
 	}, "hydra.keys.update"); err != nil {
 		h.H.WriteError(w, r, err)
@@ -358,7 +397,7 @@ func (h *Handler) UpdateKeySet(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	for _, request := range requests.Keys {
-		key := &jose.JsonWebKey{}
+		key := &jose.JSONWebKey{}
 		if err := key.UnmarshalJSON(request); err != nil {
 			h.H.WriteError(w, r, errors.WithStack(err))
 		}
@@ -373,11 +412,12 @@ func (h *Handler) UpdateKeySet(w http.ResponseWriter, r *http.Request, ps httpro
 	h.H.Write(w, r, keySet)
 }
 
-// swagger:route PUT /keys/{set}/{kid} jwks updateJwkKey
+// swagger:route PUT /keys/{set}/{kid} jsonWebKey updateJsonWebKey
 //
-// Updates a JSON Web Key
+// Update a JSON Web Key
 //
 // Use this method if you do not want to let Hydra generate the JWKs for you, but instead save your own.
+//
 //
 // The subject making the request needs to be assigned to a policy containing:
 //
@@ -401,13 +441,13 @@ func (h *Handler) UpdateKeySet(w http.ResponseWriter, r *http.Request, ps httpro
 //       oauth2: hydra.keys.update
 //
 //     Responses:
-//       200: jwkSet
+//       200: jsonWebKey
 //       401: genericError
 //       403: genericError
 //       500: genericError
 func (h *Handler) UpdateKey(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var ctx = context.Background()
-	var key jose.JsonWebKey
+	var key jose.JSONWebKey
 	var set = ps.ByName("set")
 
 	if err := json.NewDecoder(r.Body).Decode(&key); err != nil {
@@ -416,7 +456,7 @@ func (h *Handler) UpdateKey(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: "rn:hydra:keys:" + set + ":" + key.KeyID,
+		Resource: h.PrefixResource("keys:" + set + ":" + key.KeyID),
 		Action:   "update",
 	}, "hydra.keys.update"); err != nil {
 		h.H.WriteError(w, r, err)
@@ -431,7 +471,7 @@ func (h *Handler) UpdateKey(w http.ResponseWriter, r *http.Request, ps httproute
 	h.H.Write(w, r, key)
 }
 
-// swagger:route DELETE /keys/{set} jwks deleteJwkSet
+// swagger:route DELETE /keys/{set} jsonWebKey deleteJsonWebKeySet
 //
 // Delete a JSON Web Key
 //
@@ -466,7 +506,7 @@ func (h *Handler) DeleteKeySet(w http.ResponseWriter, r *http.Request, ps httpro
 	var setName = ps.ByName("set")
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: "rn:hydra:keys:" + setName,
+		Resource: h.PrefixResource("keys:" + setName),
 		Action:   "delete",
 	}, "hydra.keys.delete"); err != nil {
 		h.H.WriteError(w, r, err)
@@ -481,7 +521,7 @@ func (h *Handler) DeleteKeySet(w http.ResponseWriter, r *http.Request, ps httpro
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// swagger:route DELETE /keys/{set}/{kid} jwks deleteJwkKey
+// swagger:route DELETE /keys/{set}/{kid} jsonWebKey deleteJsonWebKey
 //
 // Delete a JSON Web Key
 //
@@ -517,7 +557,7 @@ func (h *Handler) DeleteKey(w http.ResponseWriter, r *http.Request, ps httproute
 	var keyName = ps.ByName("key")
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
-		Resource: "rn:hydra:keys:" + setName + ":" + keyName,
+		Resource: h.PrefixResource("keys:" + setName + ":" + keyName),
 		Action:   "delete",
 	}, "hydra.keys.delete"); err != nil {
 		h.H.WriteError(w, r, err)
