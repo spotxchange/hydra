@@ -21,11 +21,6 @@ import (
 	"os"
 	"testing"
 
-<<<<<<< HEAD
-	"github.com/ory/fosite"
-	. "github.com/ory/hydra/client"
-	"github.com/ory/hydra/integration"
-=======
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
 	"github.com/ory/ladon"
@@ -33,7 +28,6 @@ import (
 	. "github.com/spotxchange/hydra/client"
 	"github.com/spotxchange/hydra/compose"
 	"github.com/spotxchange/hydra/integration"
->>>>>>> dd92d72... Changing package names to facilitate build
 )
 
 var clientManagers = map[string]Manager{}

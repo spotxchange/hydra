@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/spotxchange/hydra/cmd/cli"
 	"github.com/spotxchange/hydra/config"
-	"github.com/spotxchange/spotxchange/oauth2"
+	"github.com/spotxchange/hydra/oauth2"
 )
 
 var cfgFile string

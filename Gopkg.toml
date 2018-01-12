@@ -74,8 +74,8 @@
   version = "3.1.0"
 
 [[constraint]]
-  name = "github.com/ory/fosite"
-  version = "0.16.1"
+  name = "github.com/spotxchange/fosite"
+  branch = "token_migration"
 
 [[constraint]]
   name = "github.com/ory/graceful"
