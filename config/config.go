@@ -27,8 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"os"
-
 	"github.com/ory/ladon"
 	lmem "github.com/ory/ladon/manager/memory"
 	lsql "github.com/ory/ladon/manager/sql"

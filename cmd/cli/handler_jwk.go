@@ -21,8 +21,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spotxchange/hydra/config"
-	"github.com/spotxchange/hydra/jwk"
-	"github.com/spotxchange/hydra/pkg"
 	hydra "github.com/spotxchange/hydra/sdk/go/hydra/swagger"
 )
 

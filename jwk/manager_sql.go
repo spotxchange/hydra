@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rubenv/sql-migrate"
 	"github.com/spotxchange/hydra/pkg"
-	"github.com/square/go-jose"
+	"gopkg.in/square/go-jose.v1"
 )
 
 type SQLManager struct {
@@ -66,7 +66,7 @@ func (s *SQLManager) CreateSchemas() (int, error) {
 	return n, nil
 }
 
-func (m *SQLManager) AddKey(set string, key *jose.JSONWebKey) error {
+func (m *SQLManager) AddKey(set string, key *jose.JsonWebKey) error {
 	out, err := json.Marshal(key)
 	if err != nil {
 		return errors.WithStack(err)
@@ -88,7 +88,7 @@ func (m *SQLManager) AddKey(set string, key *jose.JSONWebKey) error {
 	return nil
 }
 
-func (m *SQLManager) AddKeySet(set string, keys *jose.JSONWebKeySet) error {
+func (m *SQLManager) AddKeySet(set string, keys *jose.JsonWebKeySet) error {
 	tx, err := m.DB.Beginx()
 	if err != nil {
 		return errors.WithStack(err)
@@ -133,7 +133,7 @@ func (m *SQLManager) AddKeySet(set string, keys *jose.JSONWebKeySet) error {
 	return nil
 }
 
-func (m *SQLManager) GetKey(set, kid string) (*jose.JSONWebKeySet, error) {
+func (m *SQLManager) GetKey(set, kid string) (*jose.JsonWebKeySet, error) {
 	var d sqlData
 	if err := m.DB.Get(&d, m.DB.Rebind("SELECT * FROM hydra_jwk WHERE sid=? AND kid=?"), set, kid); err == sql.ErrNoRows {
 		return nil, errors.Wrap(pkg.ErrNotFound, "")
@@ -146,17 +146,17 @@ func (m *SQLManager) GetKey(set, kid string) (*jose.JSONWebKeySet, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	var c jose.JSONWebKey
+	var c jose.JsonWebKey
 	if err := json.Unmarshal(key, &c); err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	return &jose.JSONWebKeySet{
-		Keys: []jose.JSONWebKey{c},
+	return &jose.JsonWebKeySet{
+		Keys: []jose.JsonWebKey{c},
 	}, nil
 }
 
-func (m *SQLManager) GetKeySet(set string) (*jose.JSONWebKeySet, error) {
+func (m *SQLManager) GetKeySet(set string) (*jose.JsonWebKeySet, error) {
 	var ds []sqlData
 	if err := m.DB.Select(&ds, m.DB.Rebind("SELECT * FROM hydra_jwk WHERE sid=?"), set); err == sql.ErrNoRows {
 		return nil, errors.Wrap(pkg.ErrNotFound, "")
@@ -168,14 +168,14 @@ func (m *SQLManager) GetKeySet(set string) (*jose.JSONWebKeySet, error) {
 		return nil, errors.Wrap(pkg.ErrNotFound, "")
 	}
 
-	keys := &jose.JSONWebKeySet{Keys: []jose.JSONWebKey{}}
+	keys := &jose.JsonWebKeySet{Keys: []jose.JsonWebKey{}}
 	for _, d := range ds {
 		key, err := m.Cipher.Decrypt(d.Key)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 
-		var c jose.JSONWebKey
+		var c jose.JsonWebKey
 		if err := json.Unmarshal(key, &c); err != nil {
 			return nil, errors.WithStack(err)
 		}

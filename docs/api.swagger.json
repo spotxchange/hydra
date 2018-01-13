@@ -12,7 +12,7 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Please refer to the user guide for in-depth documentation: https://ory.gitbooks.io/hydra/content/\n\n\nHydra offers OAuth 2.0 and OpenID Connect Core 1.0 capabilities as a service. Hydra is different, because it works with any existing authentication infrastructure, not just LDAP or SAML. By implementing a consent app (works with any programming language) you build a bridge between Hydra and your authentication infrastructure.\nHydra is able to securely manage JSON Web Keys, and has a sophisticated policy-based access control you can use if you want to.\nHydra is suitable for green- (new) and brownfield (existing) projects. If you are not familiar with OAuth 2.0 and are working on a greenfield project, we recommend evaluating if OAuth 2.0 really serves your purpose. Knowledge of OAuth 2.0 is imperative in understanding what Hydra does and how it works.\n\n\nThe official repository is located at https://github.com/ory/hydra\n\n\n### Important REST API Documentation Notes\n\nThe swagger generator used to create this documentation does currently not support example responses. To see\nrequest and response payloads click on **\"Show JSON schema\"**:\n![Enable JSON Schema on Apiary](https://storage.googleapis.com/ory.am/hydra/json-schema.png)\n\n\nThe API documentation always refers to the latest tagged version of ORY Hydra. For previous API documentations, please\nrefer to https://github.com/ory/hydra/blob/\u003ctag-id\u003e/docs/api.swagger.yaml - for example:\n\n0.9.13: https://github.com/ory/hydra/blob/v0.9.13/docs/api.swagger.yaml\n0.8.1: https://github.com/ory/hydra/blob/v0.8.1/docs/api.swagger.yaml",
+    "description": "Please refer to the user guide for in-depth documentation: https://ory.gitbooks.io/hydra/content/\n\n\nHydra offers OAuth 2.0 and OpenID Connect Core 1.0 capabilities as a service. Hydra is different, because it works with any existing authentication infrastructure, not just LDAP or SAML. By implementing a consent app (works with any programming language) you build a bridge between Hydra and your authentication infrastructure.\nHydra is able to securely manage JSON Web Keys, and has a sophisticated policy-based access control you can use if you want to.\nHydra is suitable for green- (new) and brownfield (existing) projects. If you are not familiar with OAuth 2.0 and are working on a greenfield project, we recommend evaluating if OAuth 2.0 really serves your purpose. Knowledge of OAuth 2.0 is imperative in understanding what Hydra does and how it works.\n\n\nThe official repository is located at https://github.com/spotxchange/hydra\n\n\n### Important REST API Documentation Notes\n\nThe swagger generator used to create this documentation does currently not support example responses. To see\nrequest and response payloads click on **\"Show JSON schema\"**:\n![Enable JSON Schema on Apiary](https://storage.googleapis.com/ory.am/hydra/json-schema.png)\n\n\nThe API documentation always refers to the latest tagged version of ORY Hydra. For previous API documentations, please\nrefer to https://github.com/spotxchange/hydra/blob/\u003ctag-id\u003e/docs/api.swagger.yaml - for example:\n\n0.9.13: https://github.com/spotxchange/hydra/blob/v0.9.13/docs/api.swagger.yaml\n0.8.1: https://github.com/spotxchange/hydra/blob/v0.8.1/docs/api.swagger.yaml",
     "title": "Hydra OAuth2 \u0026 OpenID Connect Server",
     "contact": {
       "name": "ORY",
@@ -21,7 +21,7 @@
     },
     "license": {
       "name": "Apache 2.0",
-      "url": "https://github.com/ory/hydra/blob/master/LICENSE"
+      "url": "https://github.com/spotxchange/hydra/blob/master/LICENSE"
     },
     "version": "Latest"
   },
@@ -1920,11 +1920,11 @@
           "x-go-name": "RequestedScopes"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "ConsentRequestManager": {
       "type": "object",
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "Context": {
       "description": "Context contains an access token's session data",
@@ -1974,12 +1974,12 @@
           "x-go-name": "Subject"
         }
       },
-      "x-go-package": "github.com/ory/hydra/firewall"
+      "x-go-package": "github.com/spotxchange/hydra/firewall"
     },
     "Firewall": {
       "type": "object",
       "title": "Firewall offers various validation strategies for access tokens.",
-      "x-go-package": "github.com/ory/hydra/firewall"
+      "x-go-package": "github.com/spotxchange/hydra/firewall"
     },
     "Handler": {
       "type": "object",
@@ -2003,15 +2003,15 @@
           "$ref": "#/definitions/Firewall"
         }
       },
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "KeyGenerator": {
       "type": "object",
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "Manager": {
       "type": "object",
-      "x-go-package": "github.com/ory/hydra/warden/group"
+      "x-go-package": "github.com/spotxchange/hydra/warden/group"
     },
     "RawMessage": {
       "description": "It implements Marshaler and Unmarshaler and can\nbe used to delay JSON decoding or precompute a JSON encoding.",
@@ -2026,7 +2026,7 @@
     "Writer": {
       "description": "Writer is a helper to write arbitrary data to a ResponseWriter",
       "type": "object",
-      "x-go-package": "github.com/ory/hydra/vendor/github.com/ory/herodot"
+      "x-go-package": "github.com/spotxchange/hydra/vendor/github.com/ory/herodot"
     },
     "consentRequestAcceptance": {
       "type": "object",
@@ -2063,7 +2063,7 @@
         }
       },
       "x-go-name": "AcceptConsentRequestPayload",
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "consentRequestRejection": {
       "type": "object",
@@ -2076,7 +2076,7 @@
         }
       },
       "x-go-name": "RejectConsentRequestPayload",
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "group": {
       "description": "Group represents a warden group",
@@ -2097,7 +2097,7 @@
         }
       },
       "x-go-name": "Group",
-      "x-go-package": "github.com/ory/hydra/warden/group"
+      "x-go-package": "github.com/spotxchange/hydra/warden/group"
     },
     "groupMembers": {
       "type": "object",
@@ -2111,7 +2111,7 @@
         }
       },
       "x-go-name": "membersRequest",
-      "x-go-package": "github.com/ory/hydra/warden/group"
+      "x-go-package": "github.com/spotxchange/hydra/warden/group"
     },
     "joseWebKeySetRequest": {
       "type": "object",
@@ -2124,7 +2124,7 @@
           "x-go-name": "Keys"
         }
       },
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "jsonWebKey": {
       "type": "object",
@@ -2207,7 +2207,7 @@
         }
       },
       "x-go-name": "swaggerJSONWebKey",
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "jsonWebKeySet": {
       "type": "object",
@@ -2222,7 +2222,7 @@
         }
       },
       "x-go-name": "swaggerJSONWebKeySet",
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "jsonWebKeySetGeneratorRequest": {
       "type": "object",
@@ -2243,7 +2243,7 @@
         }
       },
       "x-go-name": "createRequest",
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "oAuth2Client": {
       "type": "object",
@@ -2336,7 +2336,7 @@
         }
       },
       "x-go-name": "Client",
-      "x-go-package": "github.com/ory/hydra/client"
+      "x-go-package": "github.com/spotxchange/hydra/client"
     },
     "oAuth2ConsentRequest": {
       "type": "object",
@@ -2372,7 +2372,7 @@
         }
       },
       "x-go-name": "swaggerConsentRequest",
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "oAuth2TokenIntrospection": {
       "type": "object",
@@ -2440,7 +2440,7 @@
         }
       },
       "x-go-name": "swaggerOAuthIntrospectionResponsePayload",
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "policy": {
       "type": "object",
@@ -2507,7 +2507,7 @@
         }
       },
       "x-go-name": "swaggerPolicy",
-      "x-go-package": "github.com/ory/hydra/policy"
+      "x-go-package": "github.com/spotxchange/hydra/policy"
     },
     "swaggerAcceptConsentRequest": {
       "type": "object",
@@ -2525,7 +2525,7 @@
           "x-go-name": "ID"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "swaggerCreatePolicyParameters": {
       "type": "object",
@@ -2534,7 +2534,7 @@
           "$ref": "#/definitions/policy"
         }
       },
-      "x-go-package": "github.com/ory/hydra/policy"
+      "x-go-package": "github.com/spotxchange/hydra/policy"
     },
     "swaggerDoesWardenAllowAccessRequestParameters": {
       "type": "object",
@@ -2543,7 +2543,7 @@
           "$ref": "#/definitions/wardenAccessRequest"
         }
       },
-      "x-go-package": "github.com/ory/hydra/warden"
+      "x-go-package": "github.com/spotxchange/hydra/warden"
     },
     "swaggerDoesWardenAllowTokenAccessRequestParameters": {
       "type": "object",
@@ -2552,7 +2552,7 @@
           "$ref": "#/definitions/wardenTokenAccessRequest"
         }
       },
-      "x-go-package": "github.com/ory/hydra/warden"
+      "x-go-package": "github.com/spotxchange/hydra/warden"
     },
     "swaggerGetPolicyParameters": {
       "type": "object",
@@ -2563,7 +2563,7 @@
           "x-go-name": "ID"
         }
       },
-      "x-go-package": "github.com/ory/hydra/policy"
+      "x-go-package": "github.com/spotxchange/hydra/policy"
     },
     "swaggerJsonWebKeyQuery": {
       "type": "object",
@@ -2583,7 +2583,7 @@
           "x-go-name": "Set"
         }
       },
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "swaggerJwkCreateSet": {
       "type": "object",
@@ -2600,7 +2600,7 @@
           "x-go-name": "Set"
         }
       },
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "swaggerJwkSetQuery": {
       "type": "object",
@@ -2614,7 +2614,7 @@
           "x-go-name": "Set"
         }
       },
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "swaggerJwkUpdateSet": {
       "type": "object",
@@ -2631,7 +2631,7 @@
           "x-go-name": "Set"
         }
       },
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "swaggerJwkUpdateSetKey": {
       "type": "object",
@@ -2654,7 +2654,7 @@
           "x-go-name": "Set"
         }
       },
-      "x-go-package": "github.com/ory/hydra/jwk"
+      "x-go-package": "github.com/spotxchange/hydra/jwk"
     },
     "swaggerListPolicyParameters": {
       "type": "object",
@@ -2672,7 +2672,7 @@
           "x-go-name": "Offset"
         }
       },
-      "x-go-package": "github.com/ory/hydra/policy"
+      "x-go-package": "github.com/spotxchange/hydra/policy"
     },
     "swaggerListPolicyResponse": {
       "description": "A policy",
@@ -2686,7 +2686,7 @@
           }
         }
       },
-      "x-go-package": "github.com/ory/hydra/policy"
+      "x-go-package": "github.com/spotxchange/hydra/policy"
     },
     "swaggerOAuthConsentRequest": {
       "description": "The consent request response",
@@ -2696,7 +2696,7 @@
           "$ref": "#/definitions/oAuth2ConsentRequest"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "swaggerOAuthConsentRequestPayload": {
       "type": "object",
@@ -2711,7 +2711,7 @@
           "x-go-name": "ID"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "swaggerOAuthIntrospectionRequest": {
       "type": "object",
@@ -2730,7 +2730,7 @@
           "x-go-name": "Token"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "swaggerOAuthIntrospectionResponse": {
       "description": "The token introspection response",
@@ -2740,7 +2740,7 @@
           "$ref": "#/definitions/oAuth2TokenIntrospection"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "swaggerOAuthTokenResponse": {
       "description": "The token response",
@@ -2786,7 +2786,7 @@
           }
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "swaggerRejectConsentRequest": {
       "type": "object",
@@ -2804,7 +2804,7 @@
           "x-go-name": "ID"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "swaggerRevokeOAuth2TokenParameters": {
       "type": "object",
@@ -2818,7 +2818,7 @@
           "x-go-name": "Token"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "swaggerUpdatePolicyParameters": {
       "type": "object",
@@ -2832,7 +2832,7 @@
           "x-go-name": "ID"
         }
       },
-      "x-go-package": "github.com/ory/hydra/policy"
+      "x-go-package": "github.com/spotxchange/hydra/policy"
     },
     "swaggerWardenAccessRequestResponseParameters": {
       "description": "The warden access request response",
@@ -2842,7 +2842,7 @@
           "$ref": "#/definitions/wardenAccessRequestResponse"
         }
       },
-      "x-go-package": "github.com/ory/hydra/warden"
+      "x-go-package": "github.com/spotxchange/hydra/warden"
     },
     "swaggerWardenTokenAccessRequestResponse": {
       "description": "The warden access request (with token) response",
@@ -2852,7 +2852,7 @@
           "$ref": "#/definitions/wardenTokenAccessRequestResponse"
         }
       },
-      "x-go-package": "github.com/ory/hydra/warden"
+      "x-go-package": "github.com/spotxchange/hydra/warden"
     },
     "swaggeruserinfoResponse": {
       "description": "The userinfo response",
@@ -2862,7 +2862,7 @@
           "$ref": "#/definitions/swaggeruserinfoResponsePayload"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "swaggeruserinfoResponsePayload": {
       "type": "object",
@@ -2964,7 +2964,7 @@
           "x-go-name": "Zoneinfo"
         }
       },
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     },
     "tokenAllowedRequest": {
       "type": "object",
@@ -2989,7 +2989,7 @@
         }
       },
       "x-go-name": "TokenAccessRequest",
-      "x-go-package": "github.com/ory/hydra/firewall"
+      "x-go-package": "github.com/spotxchange/hydra/firewall"
     },
     "wardenAccessRequest": {
       "type": "object",
@@ -3020,7 +3020,7 @@
         }
       },
       "x-go-name": "AccessRequest",
-      "x-go-package": "github.com/ory/hydra/firewall"
+      "x-go-package": "github.com/spotxchange/hydra/firewall"
     },
     "wardenAccessRequestResponse": {
       "description": "The warden access request response",
@@ -3033,7 +3033,7 @@
         }
       },
       "x-go-name": "swaggerWardenAccessRequestResponse",
-      "x-go-package": "github.com/ory/hydra/warden"
+      "x-go-package": "github.com/spotxchange/hydra/warden"
     },
     "wardenTokenAccessRequest": {
       "type": "object",
@@ -3071,7 +3071,7 @@
         }
       },
       "x-go-name": "swaggerWardenTokenAccessRequest",
-      "x-go-package": "github.com/ory/hydra/warden"
+      "x-go-package": "github.com/spotxchange/hydra/warden"
     },
     "wardenTokenAccessRequestResponse": {
       "description": "The warden access request (with token) response",
@@ -3125,7 +3125,7 @@
         }
       },
       "x-go-name": "swaggerWardenTokenAccessRequestResponsePayload",
-      "x-go-package": "github.com/ory/hydra/warden"
+      "x-go-package": "github.com/spotxchange/hydra/warden"
     },
     "wellKnown": {
       "type": "object",
@@ -3214,7 +3214,7 @@
         }
       },
       "x-go-name": "WellKnown",
-      "x-go-package": "github.com/ory/hydra/oauth2"
+      "x-go-package": "github.com/spotxchange/hydra/oauth2"
     }
   },
   "responses": {

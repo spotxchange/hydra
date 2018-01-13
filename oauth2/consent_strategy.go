@@ -25,7 +25,6 @@ import (
 	"github.com/spotxchange/fosite"
 	"github.com/spotxchange/fosite/handler/openid"
 	ejwt "github.com/spotxchange/fosite/token/jwt"
-	"github.com/spotxchange/hydra/jwk"
 )
 
 const (
@@ -92,7 +91,6 @@ func (s *DefaultConsentStrategy) ValidateConsentRequest(req fosite.AuthorizeRequ
 				IssuedAt:    time.Now(),
 				ExpiresAt:   time.Now().Add(s.DefaultIDTokenLifespan),
 				AuthTime:    time.Now(),
-				RequestedAt: time.Now().UTC(),
 				Extra:       consent.IDTokenExtra,
 			},
 			// required for lookup on jwk endpoint

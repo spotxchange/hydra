@@ -23,7 +23,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/ory/herodot"
-	hc "github.com/ory/hydra/client"
+	hc "github.com/spotxchange/hydra/client"
 	hcompose "github.com/spotxchange/hydra/compose"
 
 	"github.com/ory/ladon"

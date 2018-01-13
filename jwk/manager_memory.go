@@ -19,34 +19,34 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spotxchange/hydra/pkg"
-	"github.com/square/go-jose"
+	"gopkg.in/square/go-jose.v1"
 )
 
 type MemoryManager struct {
-	Keys map[string]*jose.JSONWebKeySet
+	Keys map[string]*jose.JsonWebKeySet
 	sync.RWMutex
 }
 
-func (m *MemoryManager) AddKey(set string, key *jose.JSONWebKey) error {
+func (m *MemoryManager) AddKey(set string, key *jose.JsonWebKey) error {
 	m.Lock()
 	defer m.Unlock()
 
 	m.alloc()
 	if m.Keys[set] == nil {
-		m.Keys[set] = &jose.JSONWebKeySet{Keys: []jose.JSONWebKey{}}
+		m.Keys[set] = &jose.JsonWebKeySet{Keys: []jose.JsonWebKey{}}
 	}
 	m.Keys[set].Keys = append(m.Keys[set].Keys, *key)
 	return nil
 }
 
-func (m *MemoryManager) AddKeySet(set string, keys *jose.JSONWebKeySet) error {
+func (m *MemoryManager) AddKeySet(set string, keys *jose.JsonWebKeySet) error {
 	for _, key := range keys.Keys {
 		m.AddKey(set, &key)
 	}
 	return nil
 }
 
-func (m *MemoryManager) GetKey(set, kid string) (*jose.JSONWebKeySet, error) {
+func (m *MemoryManager) GetKey(set, kid string) (*jose.JsonWebKeySet, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -61,12 +61,12 @@ func (m *MemoryManager) GetKey(set, kid string) (*jose.JSONWebKeySet, error) {
 		return nil, errors.Wrap(pkg.ErrNotFound, "")
 	}
 
-	return &jose.JSONWebKeySet{
+	return &jose.JsonWebKeySet{
 		Keys: result,
 	}, nil
 }
 
-func (m *MemoryManager) GetKeySet(set string) (*jose.JSONWebKeySet, error) {
+func (m *MemoryManager) GetKeySet(set string) (*jose.JsonWebKeySet, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -86,7 +86,7 @@ func (m *MemoryManager) DeleteKey(set, kid string) error {
 	}
 
 	m.Lock()
-	var results []jose.JSONWebKey
+	var results []jose.JsonWebKey
 	for _, key := range keys.Keys {
 		if key.KeyID != kid {
 			results = append(results)
@@ -108,6 +108,6 @@ func (m *MemoryManager) DeleteKeySet(set string) error {
 
 func (m *MemoryManager) alloc() {
 	if m.Keys == nil {
-		m.Keys = make(map[string]*jose.JSONWebKeySet)
+		m.Keys = make(map[string]*jose.JsonWebKeySet)
 	}
 }

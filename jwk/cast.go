@@ -18,10 +18,10 @@ import (
 	"crypto/rsa"
 
 	"github.com/pkg/errors"
-	"github.com/square/go-jose"
+	jose "gopkg.in/square/go-jose.v1"
 )
 
-func MustRSAPublic(key *jose.JSONWebKey) *rsa.PublicKey {
+func MustRSAPublic(key *jose.JsonWebKey) *rsa.PublicKey {
 	res, err := ToRSAPublic(key)
 	if err != nil {
 		panic(err.Error())
@@ -30,7 +30,7 @@ func MustRSAPublic(key *jose.JSONWebKey) *rsa.PublicKey {
 
 }
 
-func ToRSAPublic(key *jose.JSONWebKey) (*rsa.PublicKey, error) {
+func ToRSAPublic(key *jose.JsonWebKey) (*rsa.PublicKey, error) {
 	res, ok := key.Key.(*rsa.PublicKey)
 	if !ok {
 		return res, errors.New("Could not convert key to RSA Private Key.")
@@ -38,7 +38,7 @@ func ToRSAPublic(key *jose.JSONWebKey) (*rsa.PublicKey, error) {
 	return res, nil
 }
 
-func MustRSAPrivate(key *jose.JSONWebKey) *rsa.PrivateKey {
+func MustRSAPrivate(key *jose.JsonWebKey) *rsa.PrivateKey {
 	res, err := ToRSAPrivate(key)
 	if err != nil {
 		panic(err.Error())
@@ -46,7 +46,7 @@ func MustRSAPrivate(key *jose.JSONWebKey) *rsa.PrivateKey {
 	return res
 }
 
-func ToRSAPrivate(key *jose.JSONWebKey) (*rsa.PrivateKey, error) {
+func ToRSAPrivate(key *jose.JsonWebKey) (*rsa.PrivateKey, error) {
 	res, ok := key.Key.(*rsa.PrivateKey)
 	if !ok {
 		return res, errors.New("Could not convert key to RSA Private Key.")

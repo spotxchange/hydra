@@ -21,10 +21,10 @@ import (
 	"encoding/pem"
 
 	"github.com/pkg/errors"
-	"github.com/square/go-jose"
+	"gopkg.in/square/go-jose.v1"
 )
 
-func First(keys []jose.JSONWebKey) *jose.JSONWebKey {
+func First(keys []jose.JsonWebKey) *jose.JsonWebKey {
 	if len(keys) == 0 {
 		return nil
 	}

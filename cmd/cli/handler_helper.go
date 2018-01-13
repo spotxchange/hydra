@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ory/hydra/pkg"
-	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
+	"github.com/spotxchange/hydra/pkg"
+	hydra "github.com/spotxchange/hydra/sdk/go/hydra/swagger"
 )
 
 func checkResponse(response *hydra.APIResponse, err error, expectedStatusCode int) {

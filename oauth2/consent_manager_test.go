@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ory/hydra/integration"
-	. "github.com/ory/hydra/oauth2"
+	"github.com/spotxchange/hydra/integration"
+	. "github.com/spotxchange/hydra/oauth2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

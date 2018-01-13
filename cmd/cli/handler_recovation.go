@@ -19,8 +19,10 @@ import (
 	"net/http"
 
 	"crypto/tls"
+	"github.com/spf13/cobra"
 
 	hydra "github.com/spotxchange/hydra/sdk/go/hydra/swagger"
+	"github.com/spotxchange/hydra/config"
 )
 
 type RevocationHandler struct {

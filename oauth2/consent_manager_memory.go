@@ -17,7 +17,7 @@ package oauth2
 import (
 	"sync"
 
-	"github.com/ory/hydra/pkg"
+	"github.com/spotxchange/hydra/pkg"
 	"github.com/pkg/errors"
 )
 

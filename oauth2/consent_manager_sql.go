@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/ory/hydra/pkg"
+	"github.com/spotxchange/hydra/pkg"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"github.com/rubenv/sql-migrate"

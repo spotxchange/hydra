@@ -17,7 +17,7 @@ package group
 import (
 	"sync"
 
-	"github.com/ory/hydra/pkg"
+	"github.com/spotxchange/hydra/pkg"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 )

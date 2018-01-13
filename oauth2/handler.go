@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/ory/herodot"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spotxchange/fosite"

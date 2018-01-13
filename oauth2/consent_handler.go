@@ -21,7 +21,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/firewall"
+	"github.com/spotxchange/hydra/firewall"
 	"github.com/pkg/errors"
 )
 

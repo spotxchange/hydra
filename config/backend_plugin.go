@@ -28,7 +28,6 @@ import (
 	"github.com/spotxchange/hydra/oauth2"
 	"github.com/spotxchange/hydra/pkg"
 	"github.com/spotxchange/hydra/warden/group"
-	"plugin"
 )
 
 type PluginConnection struct {

@@ -19,12 +19,9 @@ import (
 
 	"github.com/ory/ladon"
 	"github.com/ory/ladon/manager/memory"
-	"github.com/pkg/errors"
 	"github.com/spotxchange/fosite/handler/oauth2"
 	"github.com/spotxchange/fosite/storage"
 	"github.com/spotxchange/fosite/token/hmac"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var HMACStrategy = &oauth2.HMACSHAStrategy{
