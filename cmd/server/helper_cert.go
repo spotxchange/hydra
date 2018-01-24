@@ -24,13 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/jwk"
-	"github.com/ory/hydra/pkg"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/square/go-jose"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/jwk"
+	"github.com/spotxchange/hydra/pkg"
+	"gopkg.in/square/go-jose.v1"
 )
 
 const (
@@ -98,8 +98,8 @@ func getOrCreateTLSCertificate(cmd *cobra.Command, c *config.Config) tls.Certifi
 
 		private := jwk.First(keys.Key("private"))
 		private.Certificates = []*x509.Certificate{cert}
-		keys = &jose.JSONWebKeySet{
-			Keys: []jose.JSONWebKey{
+		keys = &jose.JsonWebKeySet{
+			Keys: []jose.JsonWebKey{
 				*private,
 				*jwk.First(keys.Key("public")),
 			},

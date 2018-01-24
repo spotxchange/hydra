@@ -14,8 +14,8 @@
 
 package jwk
 
-import "github.com/square/go-jose"
+import jose "gopkg.in/square/go-jose.v1"
 
 type KeyGenerator interface {
-	Generate(id string) (*jose.JSONWebKeySet, error)
+	Generate(id string) (*jose.JsonWebKeySet, error)
 }

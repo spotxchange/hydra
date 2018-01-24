@@ -21,16 +21,20 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/julienschmidt/httprouter"
-	"github.com/ory/fosite"
-	"github.com/ory/fosite/compose"
+
 	"github.com/ory/herodot"
-	hc "github.com/ory/hydra/client"
-	hcompose "github.com/ory/hydra/compose"
-	. "github.com/ory/hydra/oauth2"
-	"github.com/ory/hydra/pkg"
-	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
+	hc "github.com/spotxchange/hydra/client"
+	hcompose "github.com/spotxchange/hydra/compose"
+
 	"github.com/ory/ladon"
 	"github.com/sirupsen/logrus"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/fosite/compose"
+	hc "github.com/spotxchange/hydra/client"
+	"github.com/spotxchange/hydra/jwk"
+	. "github.com/spotxchange/hydra/oauth2"
+	"github.com/spotxchange/hydra/pkg"
+	hydra "github.com/spotxchange/hydra/sdk/go/hydra/swagger"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )

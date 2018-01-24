@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	_ "github.com/lib/pq"
-	"github.com/ory/hydra/integration"
-	. "github.com/ory/hydra/warden/group"
+	"github.com/spotxchange/hydra/integration"
+	. "github.com/spotxchange/hydra/warden/group"
 )
 
 var clientManagers = map[string]Manager{

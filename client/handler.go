@@ -21,10 +21,10 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/firewall"
-	"github.com/ory/hydra/rand/sequence"
 	"github.com/ory/ladon"
 	"github.com/pkg/errors"
+	"github.com/spotxchange/hydra/firewall"
+	"github.com/spotxchange/hydra/rand/sequence"
 )
 
 type Handler struct {

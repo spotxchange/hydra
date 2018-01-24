@@ -21,9 +21,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/firewall"
 	"github.com/pkg/errors"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/firewall"
 )
 
 const (

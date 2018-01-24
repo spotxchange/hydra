@@ -19,9 +19,9 @@ import (
 
 	"context"
 
-	"github.com/ory/fosite"
-	"github.com/ory/hydra/client"
 	"github.com/pkg/errors"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/client"
 )
 
 type FositeMemoryStore struct {

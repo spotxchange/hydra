@@ -20,11 +20,11 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/integration"
 	"github.com/ory/ladon"
 	lsql "github.com/ory/ladon/manager/sql"
 	"github.com/pborman/uuid"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/ory/hydra/pkg"
-	"github.com/ory/hydra/rand/sequence"
 	"github.com/spf13/cobra"
+	"github.com/spotxchange/hydra/pkg"
+	"github.com/spotxchange/hydra/rand/sequence"
 	"github.com/toqueteos/webbrowser"
 	"golang.org/x/oauth2"
 )

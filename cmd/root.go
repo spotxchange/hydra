@@ -23,11 +23,11 @@ import (
 
 	"time"
 
-	"github.com/ory/hydra/cmd/cli"
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/oauth2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/spotxchange/hydra/cmd/cli"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/oauth2"
 )
 
 var cfgFile string

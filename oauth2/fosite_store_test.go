@@ -20,12 +20,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ory/fosite"
-	"github.com/ory/hydra/client"
-	"github.com/ory/hydra/integration"
-	. "github.com/ory/hydra/oauth2"
-	"github.com/ory/hydra/pkg"
 	"github.com/sirupsen/logrus"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/client"
+	"github.com/spotxchange/hydra/integration"
+	. "github.com/spotxchange/hydra/oauth2"
+	"github.com/spotxchange/hydra/pkg"
 )
 
 var clientManagers = map[string]pkg.FositeStorer{}

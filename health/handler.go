@@ -19,8 +19,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/firewall"
-	"github.com/ory/hydra/metrics"
+	"github.com/spotxchange/hydra/firewall"
+	"github.com/spotxchange/hydra/metrics"
 )
 
 const (

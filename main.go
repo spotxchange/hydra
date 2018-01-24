@@ -18,8 +18,8 @@ package main
 import (
 	"os"
 
-	"github.com/ory/hydra/cmd"
 	"github.com/pkg/profile"
+	"github.com/spotxchange/hydra/cmd"
 )
 
 func main() {

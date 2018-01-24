@@ -28,7 +28,7 @@ import (
 	"bytes"
 
 	"github.com/julienschmidt/httprouter"
-	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
+	hydra "github.com/spotxchange/hydra/sdk/go/hydra/swagger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"

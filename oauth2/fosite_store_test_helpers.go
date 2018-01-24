@@ -21,10 +21,10 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/ory/fosite"
-	"github.com/ory/hydra/client"
-	"github.com/ory/hydra/pkg"
 	"github.com/pborman/uuid"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/client"
+	"github.com/spotxchange/hydra/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

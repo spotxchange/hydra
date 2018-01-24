@@ -7,7 +7,7 @@
     "sdk",
     "api"
   ],
-  "homepage": "https://github.com/ory/hydra",
+  "homepage": "https://github.com/spotxchange/hydra",
   "license": "Apache 2.0",
   "authors": [],
   "require": {

@@ -17,8 +17,8 @@ package server
 import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/oauth2"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/oauth2"
 )
 
 func injectConsentManager(c *config.Config) {

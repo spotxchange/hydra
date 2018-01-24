@@ -15,7 +15,7 @@
 package hydra
 
 import (
-	"github.com/ory/hydra/sdk/go/hydra/swagger"
+	"github.com/spotxchange/hydra/sdk/go/hydra/swagger"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )

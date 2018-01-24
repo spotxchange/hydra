@@ -21,11 +21,11 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/ory/fosite"
-	"github.com/ory/hydra/pkg"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"github.com/rubenv/sql-migrate"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/pkg"
 )
 
 var migrations = &migrate.MemoryMigrationSource{

@@ -21,9 +21,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/firewall"
-	"github.com/ory/hydra/pkg"
 	"github.com/pkg/errors"
+	"github.com/spotxchange/hydra/firewall"
+	"github.com/spotxchange/hydra/pkg"
 )
 
 // swagger:model groupMembers

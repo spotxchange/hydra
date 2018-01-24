@@ -15,14 +15,14 @@
 package config
 
 import (
-	"github.com/ory/fosite"
-	"github.com/ory/fosite/handler/oauth2"
-	"github.com/ory/hydra/firewall"
-	"github.com/ory/hydra/jwk"
-	hoa2 "github.com/ory/hydra/oauth2"
-	"github.com/ory/hydra/pkg"
-	"github.com/ory/hydra/warden/group"
 	"github.com/ory/ladon"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/fosite/handler/oauth2"
+	"github.com/spotxchange/hydra/firewall"
+	"github.com/spotxchange/hydra/jwk"
+	hoa2 "github.com/spotxchange/hydra/oauth2"
+	"github.com/spotxchange/hydra/pkg"
+	"github.com/spotxchange/hydra/warden/group"
 )
 
 type Context struct {

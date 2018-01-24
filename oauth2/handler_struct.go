@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"github.com/gorilla/sessions"
-	"github.com/ory/fosite"
+	"github.com/spotxchange/fosite"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/firewall"
+	"github.com/spotxchange/hydra/firewall"
 	"github.com/sirupsen/logrus"
 )
 

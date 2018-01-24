@@ -22,9 +22,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/firewall"
 	"github.com/pkg/errors"
-	"github.com/square/go-jose"
+	"github.com/spotxchange/hydra/firewall"
+	"gopkg.in/square/go-jose.v1"
 )
 
 const (
@@ -380,7 +380,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, ps httprouter.P
 func (h *Handler) UpdateKeySet(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var ctx = context.Background()
 	var requests joseWebKeySetRequest
-	var keySet = new(jose.JSONWebKeySet)
+	var keySet = new(jose.JsonWebKeySet)
 	var set = ps.ByName("set")
 
 	if _, err := h.W.TokenAllowed(ctx, h.W.TokenFromRequest(r), &firewall.TokenAccessRequest{
@@ -397,7 +397,7 @@ func (h *Handler) UpdateKeySet(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	for _, request := range requests.Keys {
-		key := &jose.JSONWebKey{}
+		key := &jose.JsonWebKey{}
 		if err := key.UnmarshalJSON(request); err != nil {
 			h.H.WriteError(w, r, errors.WithStack(err))
 		}
@@ -447,7 +447,7 @@ func (h *Handler) UpdateKeySet(w http.ResponseWriter, r *http.Request, ps httpro
 //       500: genericError
 func (h *Handler) UpdateKey(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var ctx = context.Background()
-	var key jose.JSONWebKey
+	var key jose.JsonWebKey
 	var set = ps.ByName("set")
 
 	if err := json.NewDecoder(r.Body).Decode(&key); err != nil {

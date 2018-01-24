@@ -20,11 +20,11 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"github.com/ory/fosite"
-	"github.com/ory/fosite/handler/openid"
-	ejwt "github.com/ory/fosite/token/jwt"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/fosite/handler/openid"
+	ejwt "github.com/spotxchange/fosite/token/jwt"
 )
 
 const (
@@ -91,7 +91,6 @@ func (s *DefaultConsentStrategy) ValidateConsentRequest(req fosite.AuthorizeRequ
 				IssuedAt:    time.Now(),
 				ExpiresAt:   time.Now().Add(s.DefaultIDTokenLifespan),
 				AuthTime:    time.Now(),
-				RequestedAt: time.Now().UTC(),
 				Extra:       consent.IDTokenExtra,
 			},
 			// required for lookup on jwk endpoint

@@ -25,9 +25,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/firewall"
-	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
-	"github.com/ory/hydra/warden"
+	"github.com/spotxchange/hydra/firewall"
+	hydra "github.com/spotxchange/hydra/sdk/go/hydra/swagger"
+	"github.com/spotxchange/hydra/warden"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	coauth2 "golang.org/x/oauth2"

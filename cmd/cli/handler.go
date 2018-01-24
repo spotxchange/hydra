@@ -15,7 +15,7 @@
 package cli
 
 import (
-	"github.com/ory/hydra/config"
+	"github.com/spotxchange/hydra/config"
 )
 
 type Handler struct {

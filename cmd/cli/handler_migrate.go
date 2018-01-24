@@ -22,15 +22,15 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/ory/hydra/client"
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/jwk"
-	"github.com/ory/hydra/oauth2"
-	"github.com/ory/hydra/pkg"
-	"github.com/ory/hydra/warden/group"
 	ladon "github.com/ory/ladon/manager/sql"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spotxchange/hydra/client"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/jwk"
+	"github.com/spotxchange/hydra/oauth2"
+	"github.com/spotxchange/hydra/pkg"
+	"github.com/spotxchange/hydra/warden/group"
 )
 
 type MigrateHandler struct {

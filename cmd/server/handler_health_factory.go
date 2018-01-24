@@ -17,8 +17,8 @@ package server
 import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/config"
-	"github.com/ory/hydra/health"
+	"github.com/spotxchange/hydra/config"
+	"github.com/spotxchange/hydra/health"
 )
 
 func newHealthHandler(c *config.Config, router *httprouter.Router) *health.Handler {

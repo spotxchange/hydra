@@ -7,8 +7,7 @@
 // Hydra is able to securely manage JSON Web Keys, and has a sophisticated policy-based access control you can use if you want to.
 // Hydra is suitable for green- (new) and brownfield (existing) projects. If you are not familiar with OAuth 2.0 and are working on a greenfield project, we recommend evaluating if OAuth 2.0 really serves your purpose. Knowledge of OAuth 2.0 is imperative in understanding what Hydra does and how it works.
 //
-//
-// The official repository is located at https://github.com/ory/hydra
+// The official repository is located at https://github.com/spotxchange/hydra
 //
 //
 // ### Important REST API Documentation Notes
@@ -19,16 +18,16 @@
 //
 //
 // The API documentation always refers to the latest tagged version of ORY Hydra. For previous API documentations, please
-// refer to https://github.com/ory/hydra/blob/<tag-id>/docs/api.swagger.yaml - for example:
+// refer to https://github.com/spotxchange/hydra/blob/<tag-id>/docs/api.swagger.yaml - for example:
 //
-// - 0.9.13: https://github.com/ory/hydra/blob/v0.9.13/docs/api.swagger.yaml
-// - 0.8.1: https://github.com/ory/hydra/blob/v0.8.1/docs/api.swagger.yaml
+// - 0.9.13: https://github.com/spotxchange/hydra/blob/v0.9.13/docs/api.swagger.yaml
+// - 0.8.1: https://github.com/spotxchange/hydra/blob/v0.8.1/docs/api.swagger.yaml
 //
 //     Schemes: http, https
 //     Host:
 //     BasePath: /
 //     Version: Latest
-//     License: Apache 2.0 https://github.com/ory/hydra/blob/master/LICENSE
+//     License: Apache 2.0 https://github.com/spotxchange/hydra/blob/master/LICENSE
 //     Contact: ORY <hi@ory.am> https://www.ory.am
 //
 //     Consumes:

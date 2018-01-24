@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/square/go-jose"
+	"gopkg.in/square/go-jose.v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +33,7 @@ func RandomBytes(n int) ([]byte, error) {
 	return bytes, nil
 }
 
-func TestHelperManagerKey(m Manager, keys *jose.JSONWebKeySet) func(t *testing.T) {
+func TestHelperManagerKey(m Manager, keys *jose.JsonWebKeySet) func(t *testing.T) {
 	pub := keys.Key("public")
 	priv := keys.Key("private")
 
@@ -68,7 +68,7 @@ func TestHelperManagerKey(m Manager, keys *jose.JSONWebKeySet) func(t *testing.T
 	}
 }
 
-func TestHelperManagerKeySet(m Manager, keys *jose.JSONWebKeySet) func(t *testing.T) {
+func TestHelperManagerKeySet(m Manager, keys *jose.JsonWebKeySet) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Parallel()
 		_, err := m.GetKeySet("foo")

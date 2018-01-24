@@ -15,11 +15,11 @@
 package jwk
 
 import (
+	"fmt"
 	"testing"
 
-	"fmt"
-
-	"github.com/square/go-jose"
+	"github.com/spotxchange/hydra/pkg"
+	"gopkg.in/square/go-jose.v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,11 +31,11 @@ func TestGenerator(t *testing.T) {
 
 	for k, c := range []struct {
 		g     KeyGenerator
-		check func(*jose.JSONWebKeySet)
+		check func(*jose.JsonWebKeySet)
 	}{
 		{
 			g: &RS256Generator{},
-			check: func(ks *jose.JSONWebKeySet) {
+			check: func(ks *jose.JsonWebKeySet) {
 				assert.Len(t, ks, 2)
 				assert.NotEmpty(t, ks.Keys[0].Key)
 				assert.NotEmpty(t, ks.Keys[1].Key)
@@ -43,7 +43,7 @@ func TestGenerator(t *testing.T) {
 		},
 		{
 			g: &ECDSA512Generator{},
-			check: func(ks *jose.JSONWebKeySet) {
+			check: func(ks *jose.JsonWebKeySet) {
 				assert.Len(t, ks, 2)
 				assert.NotEmpty(t, ks.Keys[0].Key)
 				assert.NotEmpty(t, ks.Keys[1].Key)
@@ -51,7 +51,7 @@ func TestGenerator(t *testing.T) {
 		},
 		{
 			g: &ECDSA256Generator{},
-			check: func(ks *jose.JSONWebKeySet) {
+			check: func(ks *jose.JsonWebKeySet) {
 				assert.Len(t, ks, 2)
 				assert.NotEmpty(t, ks.Keys[0].Key)
 				assert.NotEmpty(t, ks.Keys[1].Key)
@@ -59,14 +59,14 @@ func TestGenerator(t *testing.T) {
 		},
 		{
 			g: &HS256Generator{},
-			check: func(ks *jose.JSONWebKeySet) {
+			check: func(ks *jose.JsonWebKeySet) {
 				assert.Len(t, ks, 1)
 				assert.NotEmpty(t, ks.Keys[0].Key)
 			},
 		},
 		{
 			g: &HS512Generator{},
-			check: func(ks *jose.JSONWebKeySet) {
+			check: func(ks *jose.JsonWebKeySet) {
 				assert.Len(t, ks, 1)
 				assert.NotEmpty(t, ks.Keys[0].Key)
 			},

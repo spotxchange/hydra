@@ -23,13 +23,15 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/ory/fosite"
-	"github.com/ory/fosite/compose"
-	"github.com/ory/fosite/storage"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/oauth2"
-	"github.com/ory/hydra/pkg"
-	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/fosite/compose"
+	"github.com/spotxchange/fosite/storage"
+	"github.com/spotxchange/hydra/oauth2"
+	"github.com/spotxchange/hydra/pkg"
+	hydra "github.com/spotxchange/hydra/sdk/go/hydra/swagger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

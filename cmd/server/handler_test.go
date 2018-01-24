@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/ory/hydra/config"
+	"github.com/spotxchange/hydra/config"
 )
 
 func TestStart(t *testing.T) {

@@ -19,13 +19,13 @@ import (
 	//"encoding/json"
 	"fmt"
 
-	"github.com/ory/hydra/config"
-	//"github.com/ory/hydra/oauth2"
+	"github.com/spotxchange/hydra/config"
+	//"github.com/spotxchange/hydra/oauth2"
 
 	"net/http"
 	"strings"
 
-	hydra "github.com/ory/hydra/sdk/go/hydra/swagger"
+	hydra "github.com/spotxchange/hydra/sdk/go/hydra/swagger"
 	"github.com/spf13/cobra"
 )
 

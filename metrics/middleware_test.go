@@ -24,12 +24,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/health"
-	"github.com/ory/hydra/metrics"
 	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/urfave/negroni"
+	"github.com/spotxchange/hydra/health"
 )
 
 func TestMiddleware(t *testing.T) {

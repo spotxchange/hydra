@@ -20,16 +20,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/segmentio/analytics-go"
-	"github.com/urfave/negroni"
-	//"github.com/ory/hydra/cmd"
 	"crypto/sha512"
 	"encoding/base64"
+	"github.com/segmentio/analytics-go"
+	"github.com/urfave/negroni"
 	"strings"
 
-	"github.com/ory/hydra/pkg"
 	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/spotxchange/hydra/pkg"
 )
 
 type MetricsManager struct {

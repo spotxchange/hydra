@@ -21,8 +21,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ory/hydra/integration"
-	. "github.com/ory/hydra/jwk"
+	"github.com/julienschmidt/httprouter"
+	"github.com/ory/herodot"
+	"github.com/ory/ladon"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/compose"
+	"github.com/spotxchange/hydra/integration"
+	. "github.com/spotxchange/hydra/jwk"
+	"github.com/spotxchange/hydra/pkg"
+	"github.com/stretchr/testify/assert"
 )
 
 var managers = map[string]Manager{

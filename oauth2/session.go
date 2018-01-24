@@ -16,9 +16,9 @@ package oauth2
 
 import (
 	"github.com/mohae/deepcopy"
-	"github.com/ory/fosite"
-	"github.com/ory/fosite/handler/openid"
-	"github.com/ory/fosite/token/jwt"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/fosite/handler/openid"
+	"github.com/spotxchange/fosite/token/jwt"
 )
 
 type Session struct {

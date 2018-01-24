@@ -21,18 +21,18 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/ory/fosite"
 	"github.com/ory/herodot"
-	"github.com/ory/hydra/compose"
-	. "github.com/ory/hydra/jwk"
 	"github.com/ory/ladon"
-	"github.com/square/go-jose"
+	"github.com/spotxchange/fosite"
+	"github.com/spotxchange/hydra/compose"
+	. "github.com/spotxchange/hydra/jwk"
+	"gopkg.in/square/go-jose.v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var testServer *httptest.Server
-var IDKS *jose.JSONWebKeySet
+var IDKS *jose.JsonWebKeySet
 
 func init() {
 	localWarden, _ := compose.NewMockFirewall(
@@ -71,7 +71,7 @@ func TestHandlerWellKnown(t *testing.T) {
 	require.NoError(t, err, "problem in http request")
 	defer res.Body.Close()
 
-	var known jose.JSONWebKeySet
+	var known jose.JsonWebKeySet
 	err = json.NewDecoder(res.Body).Decode(&known)
 	require.NoError(t, err, "problem in decoding response")
 
