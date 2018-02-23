@@ -47,6 +47,7 @@ const (
 	RevocationPath = "/oauth2/revoke"
 
 	IntrospectScope = "hydra.introspect"
+	MigrateScope = "hydra.token.migration"
 
 	consentCookieName = "consent_session"
 )
@@ -259,18 +260,37 @@ func (h *Handler) RevocationHandler(w http.ResponseWriter, r *http.Request, _ ht
 //     Schemes: http, https
 //
 //     Security:
-//       oauth2:
+//       basic:
+//       oauth2: hydra.token.migration
 //
 //     Responses:
 //       200: emptyResponse
 //       401: genericError
 //       500: genericError
 func (h *Handler) MigrationHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var ctx = fosite.NewContext()
-	err := h.OAuth2.NewTokenMigrationRequest(ctx, r)
-	if err != nil {
-		pkg.LogError(err, h.L)
+	var err error
+	if token := h.W.TokenFromRequest(r); token != "" {
+		_, err = h.W.TokenAllowed(r.Context(), token, &firewall.TokenAccessRequest{
+			Resource: fmt.Sprintf(h.PrefixResource("oauth2:tokens")),
+			Action:   "migrate",
+		}, MigrateScope)
+	} else if client, _, ok := r.BasicAuth(); ok {
+		err = h.W.IsAllowed(r.Context(), &firewall.AccessRequest{
+			Subject:  client,
+			Resource: fmt.Sprintf(h.PrefixResource("oauth2:tokens")),
+			Action:   "migrate",
+		})
+	} else {
+		err = errors.WithStack(fosite.ErrRequestUnauthorized)
 	}
+
+	if err == nil {
+		err = h.OAuth2.NewTokenMigrationRequest(fosite.NewContext(), r)
+		if err != nil {
+			pkg.LogError(err, h.L)
+		}
+	}
+
 	h.OAuth2.WriteTokenMigrationResponse(w, err)
 }
 
