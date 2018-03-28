@@ -116,6 +116,18 @@ type WellKnown struct {
 	IDTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
 }
 
+type oDataAccessResponse struct {
+	*fosite.AccessResponse
+}
+
+func (a *oDataAccessResponse) ToMap() map[string]interface{} {
+	return map[string]interface{} {
+		"value": map[string]interface{}{
+			"data": a.AccessResponse.ToMap(),
+		},
+	}
+}
+
 func (h *Handler) SetRoutes(r *httprouter.Router) {
 	r.POST(TokenPath, h.TokenHandler)
 	r.POST(MigratePath, h.MigrationHandler)
@@ -434,7 +446,11 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	h.OAuth2.WriteAccessResponse(w, accessRequest, accessResponse)
+	if ar, ok := accessResponse.(*fosite.AccessResponse); !ok || r.URL.Query().Get("odata") == "disabled" {
+		h.OAuth2.WriteAccessResponse(w, accessRequest, accessResponse)
+	} else {
+		h.OAuth2.WriteAccessResponse(w, accessRequest, &oDataAccessResponse{ar})
+	}
 }
 
 // swagger:route GET /oauth2/auth oAuth2 oauthAuth
