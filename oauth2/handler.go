@@ -446,7 +446,7 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	if ar, ok := accessResponse.(*fosite.AccessResponse); !ok || r.URL.Query().Get("odata") != "disabled" {
+	if ar, ok := accessResponse.(*fosite.AccessResponse); !ok || r.URL.Query().Get("odata") == "disabled" {
 		h.OAuth2.WriteAccessResponse(w, accessRequest, accessResponse)
 	} else {
 		h.OAuth2.WriteAccessResponse(w, accessRequest, &oDataAccessResponse{ar})
