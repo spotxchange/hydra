@@ -454,7 +454,7 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprou
 }
 
 func (h *Handler) isODataEnabled(r *http.Request) bool {
-	return r.Header.Get("x-odata-response") == "enabled"
+	return r.Header.Get("x-odata-response") == "1"
 }
 
 // swagger:route GET /oauth2/auth oAuth2 oauthAuth
