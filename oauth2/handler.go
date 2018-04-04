@@ -446,11 +446,15 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	if ar, ok := accessResponse.(*fosite.AccessResponse); !ok || r.URL.Query().Get("odata") == "disabled" {
-		h.OAuth2.WriteAccessResponse(w, accessRequest, accessResponse)
-	} else {
+	if ar, ok := accessResponse.(*fosite.AccessResponse); ok && h.isODataEnabled(r) {
 		h.OAuth2.WriteAccessResponse(w, accessRequest, &oDataAccessResponse{ar})
+	} else {
+		h.OAuth2.WriteAccessResponse(w, accessRequest, accessResponse)
 	}
+}
+
+func (h *Handler) isODataEnabled(r *http.Request) bool {
+	return r.Header.Get("x-odata-response") == "1"
 }
 
 // swagger:route GET /oauth2/auth oAuth2 oauthAuth
