@@ -20,16 +20,18 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/ory/herodot"
 	"github.com/spotxchange/hydra/firewall"
-	"github.com/spotxchange/hydra/metrics"
+	"github.com/spotxchange/hydra/metrics/telemetry"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
 	HealthStatusPath  = "/health/status"
 	HealthMetricsPath = "/health/metrics"
+	PrometheusStatusPath = "/health/prometheus"
 )
 
 type Handler struct {
-	Metrics        *metrics.MetricsManager
+	Metrics        *telemetry.MetricsManager
 	H              *herodot.JSONWriter
 	W              firewall.Firewall
 	ResourcePrefix string
@@ -50,6 +52,7 @@ func (h *Handler) PrefixResource(resource string) string {
 func (h *Handler) SetRoutes(r *httprouter.Router) {
 	r.GET(HealthStatusPath, h.Health)
 	r.GET(HealthMetricsPath, h.Statistics)
+	r.Handler("GET", PrometheusStatusPath, promhttp.Handler())
 }
 
 // swagger:route GET /health/status health getInstanceStatus
