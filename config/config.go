@@ -19,13 +19,6 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"net/url"
-	"os"
-	"strings"
-	"time"
 	"github.com/ory/ladon"
 	lmem "github.com/ory/ladon/manager/memory"
 	lsql "github.com/ory/ladon/manager/sql"
@@ -37,13 +30,20 @@ import (
 	foauth2 "github.com/spotxchange/fosite/handler/oauth2"
 	"github.com/spotxchange/fosite/token/hmac"
 	"github.com/spotxchange/hydra/health"
-	"github.com/spotxchange/hydra/metrics/telemetry"
 	"github.com/spotxchange/hydra/metrics/prometheus"
-	"github.com/spotxchange/hydra/warden/group"
+	"github.com/spotxchange/hydra/metrics/telemetry"
 	"github.com/spotxchange/hydra/pkg"
-	"golang.org/x/oauth2/clientcredentials"
+	"github.com/spotxchange/hydra/warden/group"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"time"
 )
 
 type Config struct {
@@ -53,40 +53,40 @@ type Config struct {
 	ClientSecret string `mapstructure:"CLIENT_SECRET" yaml:"client_secret,omitempty"`
 
 	// These are used by the host command
-	BindPort                         int                     `mapstructure:"PORT" yaml:"-"`
-	BindHost                         string                  `mapstructure:"HOST" yaml:"-"`
-	Issuer                           string                  `mapstructure:"ISSUER" yaml:"-"`
-	SystemSecret                     string                  `mapstructure:"SYSTEM_SECRET" yaml:"-"`
-	DatabaseURL                      string                  `mapstructure:"DATABASE_URL" yaml:"-"`
-	DatabasePlugin                   string                  `mapstructure:"DATABASE_PLUGIN" yaml:"-"`
-	ConsentURL                       string                  `mapstructure:"CONSENT_URL" yaml:"-"`
-	AllowTLSTermination              string                  `mapstructure:"HTTPS_ALLOW_TERMINATION_FROM" yaml:"-"`
-	BCryptWorkFactor                 int                     `mapstructure:"BCRYPT_COST" yaml:"-"`
-	AccessTokenLifespan              string                  `mapstructure:"ACCESS_TOKEN_LIFESPAN" yaml:"-"`
-	ScopeStrategy                    string                  `mapstructure:"SCOPE_STRATEGY" yaml:"-"`
-	AuthCodeLifespan                 string                  `mapstructure:"AUTH_CODE_LIFESPAN" yaml:"-"`
-	IDTokenLifespan                  string                  `mapstructure:"ID_TOKEN_LIFESPAN" yaml:"-"`
-	ChallengeTokenLifespan           string                  `mapstructure:"CHALLENGE_TOKEN_LIFESPAN" yaml:"-"`
-	RefreshTokenLifespan             string                  `mapstructure:"REFRESH_TOKEN_LIFESPAN" yaml:"-"`
-	CookieSecret                     string                  `mapstructure:"COOKIE_SECRET" yaml:"-"`
-	LogLevel                         string                  `mapstructure:"LOG_LEVEL" yaml:"-"`
-	LogFormat                        string                  `mapstructure:"LOG_FORMAT" yaml:"-"`
-	AccessControlResourcePrefix      string                  `mapstructure:"RESOURCE_NAME_PREFIX" yaml:"-"`
-	OpenIDDiscoveryClaimsSupported   string                  `mapstructure:"OIDC_DISCOVERY_CLAIMS_SUPPORTED" yaml:"-"`
-	OpenIDDiscoveryScopesSupported   string                  `mapstructure:"OIDC_DISCOVERY_SCOPES_SUPPORTED" yaml:"-"`
-	OpenIDDiscoveryUserinfoEndpoint  string                  `mapstructure:"OIDC_DISCOVERY_USERINFO_ENDPOINT" yaml:"-"`
-	SendOAuth2DebugMessagesToClients bool                    `mapstructure:"OAUTH2_SHARE_ERROR_DEBUG" yaml:"-"`
-	ForceHTTP                        bool                    `yaml:"-"`
-	BuildVersion                     string                  `yaml:"-"`
-	BuildHash                        string                  `yaml:"-"`
-	BuildTime                        string                  `yaml:"-"`
-	logger                           *logrus.Logger          `yaml:"-"`
-	telemetry                          *telemetry.MetricsManager `yaml:"-"`
-	prometheus   *prometheus.MetricsManager `yaml:"-"`
-	cluster                          *url.URL                `yaml:"-"`
-	oauth2Client                     *http.Client            `yaml:"-"`
-	context                          *Context                `yaml:"-"`
-	systemSecret                     []byte                  `yaml:"-"`
+	BindPort                         int                        `mapstructure:"PORT" yaml:"-"`
+	BindHost                         string                     `mapstructure:"HOST" yaml:"-"`
+	Issuer                           string                     `mapstructure:"ISSUER" yaml:"-"`
+	SystemSecret                     string                     `mapstructure:"SYSTEM_SECRET" yaml:"-"`
+	DatabaseURL                      string                     `mapstructure:"DATABASE_URL" yaml:"-"`
+	DatabasePlugin                   string                     `mapstructure:"DATABASE_PLUGIN" yaml:"-"`
+	ConsentURL                       string                     `mapstructure:"CONSENT_URL" yaml:"-"`
+	AllowTLSTermination              string                     `mapstructure:"HTTPS_ALLOW_TERMINATION_FROM" yaml:"-"`
+	BCryptWorkFactor                 int                        `mapstructure:"BCRYPT_COST" yaml:"-"`
+	AccessTokenLifespan              string                     `mapstructure:"ACCESS_TOKEN_LIFESPAN" yaml:"-"`
+	ScopeStrategy                    string                     `mapstructure:"SCOPE_STRATEGY" yaml:"-"`
+	AuthCodeLifespan                 string                     `mapstructure:"AUTH_CODE_LIFESPAN" yaml:"-"`
+	IDTokenLifespan                  string                     `mapstructure:"ID_TOKEN_LIFESPAN" yaml:"-"`
+	ChallengeTokenLifespan           string                     `mapstructure:"CHALLENGE_TOKEN_LIFESPAN" yaml:"-"`
+	RefreshTokenLifespan             string                     `mapstructure:"REFRESH_TOKEN_LIFESPAN" yaml:"-"`
+	CookieSecret                     string                     `mapstructure:"COOKIE_SECRET" yaml:"-"`
+	LogLevel                         string                     `mapstructure:"LOG_LEVEL" yaml:"-"`
+	LogFormat                        string                     `mapstructure:"LOG_FORMAT" yaml:"-"`
+	AccessControlResourcePrefix      string                     `mapstructure:"RESOURCE_NAME_PREFIX" yaml:"-"`
+	OpenIDDiscoveryClaimsSupported   string                     `mapstructure:"OIDC_DISCOVERY_CLAIMS_SUPPORTED" yaml:"-"`
+	OpenIDDiscoveryScopesSupported   string                     `mapstructure:"OIDC_DISCOVERY_SCOPES_SUPPORTED" yaml:"-"`
+	OpenIDDiscoveryUserinfoEndpoint  string                     `mapstructure:"OIDC_DISCOVERY_USERINFO_ENDPOINT" yaml:"-"`
+	SendOAuth2DebugMessagesToClients bool                       `mapstructure:"OAUTH2_SHARE_ERROR_DEBUG" yaml:"-"`
+	ForceHTTP                        bool                       `yaml:"-"`
+	BuildVersion                     string                     `yaml:"-"`
+	BuildHash                        string                     `yaml:"-"`
+	BuildTime                        string                     `yaml:"-"`
+	logger                           *logrus.Logger             `yaml:"-"`
+	telemetry                        *telemetry.MetricsManager  `yaml:"-"`
+	prometheus                       *prometheus.MetricsManager `yaml:"-"`
+	cluster                          *url.URL                   `yaml:"-"`
+	oauth2Client                     *http.Client               `yaml:"-"`
+	context                          *Context                   `yaml:"-"`
+	systemSecret                     []byte                     `yaml:"-"`
 }
 
 func (c *Config) GetScopeStrategy() fosite.ScopeStrategy {
