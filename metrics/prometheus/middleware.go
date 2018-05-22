@@ -3,7 +3,6 @@ package prometheus
 import (
 	"net/http"
 	"time"
-	"github.com/spotxchange/hydra/health"
 )
 
 type MetricsManager struct {
@@ -19,9 +18,9 @@ func NewMetricsManager(version, hash, buildTime string) *MetricsManager {
 func (pmm *MetricsManager) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	start := time.Now()
 	next(rw, r)
-	if r.URL.Path != health.HealthMetricsPath &&
-		r.URL.Path != health.HealthStatusPath &&
-		r.URL.Path != health.PrometheusStatusPath {
+	if r.URL.Path != "/health/status" &&
+		r.URL.Path != "/health/metrics" &&
+		r.URL.Path != "/health/prometheus" {
 		// Request counter metric
 		pmm.prometheusMetrics.Counter.WithLabelValues(r.URL.Path).Inc()
 		// Response time metric

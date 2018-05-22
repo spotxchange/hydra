@@ -29,6 +29,12 @@
   version = "v7"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/beorn7/perks"
+  packages = ["quantile"]
+  revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
+
+[[projects]]
   name = "github.com/cenkalti/backoff"
   packages = ["."]
   revision = "61153c768f31ee5f130071d08fc82b85208528de"
@@ -230,6 +236,12 @@
   version = "v1.7.6"
 
 [[projects]]
+  name = "github.com/matttproud/golang_protobuf_extensions"
+  packages = ["pbutil"]
+  revision = "3247c84500bff8d9fb6d579d800f20b3e091582c"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/meatballhat/negroni-logrus"
   packages = ["."]
@@ -350,6 +362,42 @@
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/prometheus/client_golang"
+  packages = [
+    "prometheus",
+    "prometheus/promhttp"
+  ]
+  revision = "c5b7fccd204277076155f10851dad72b76a49317"
+  version = "v0.8.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/client_model"
+  packages = ["go"]
+  revision = "99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/common"
+  packages = [
+    "expfmt",
+    "internal/bitbucket.org/ww/goautoneg",
+    "model"
+  ]
+  revision = "7600349dcfe1abd18d72d3a1770870d9800a7801"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/procfs"
+  packages = [
+    ".",
+    "internal/util",
+    "nfs",
+    "xfs"
+  ]
+  revision = "8b1c2da0d56deffdbb9e48d4414b4e674bd8083e"
 
 [[projects]]
   name = "github.com/rs/cors"
@@ -558,12 +606,12 @@
 [[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
-  version = "v2.1.1"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "335a27061ed007adf4499c4ba5642df3a6b28922a628a2a1bf0d692bab85b276"
+  inputs-digest = "bb268ec82b18c1d8adfb7a4b0d993a54a9c1f448dee991f44a67a48a0d58f7da"
   solver-name = "gps-cdcl"
   solver-version = 1
