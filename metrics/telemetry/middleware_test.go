@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetry
+package telemetry_test
 
 import (
 	"fmt"
@@ -26,6 +26,9 @@ import (
 	"github.com/ory/herodot"
 	"github.com/sirupsen/logrus"
 	"github.com/spotxchange/hydra/health"
+	"github.com/urfave/negroni"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMiddleware(t *testing.T) {
