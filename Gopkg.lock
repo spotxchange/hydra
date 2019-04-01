@@ -483,7 +483,7 @@
     "token/hmac",
     "token/jwt"
   ]
-  revision = "f1faf47653f4ca0106c22485be4fbd7c448e70d4"
+  revision = "7208e917633a4890f5f6311efc04b14b28ac8c0e"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -604,10 +604,10 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
-  version = "v2.2.1"
+  revision = "7b8349ac747c6a24702b762d2c4fd9266cf4f1d6"
 
 [solve-meta]
   analyzer-name = "dep"
