@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
@@ -420,8 +421,8 @@ func (h *Handler) IntrospectHandler(w http.ResponseWriter, r *http.Request, _ ht
 //       401: genericError
 //       500: genericError
 func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var session = NewSession("")
-	var ctx = fosite.NewContext()
+	var session= NewSession("")
+	var ctx= fosite.NewContext()
 
 	accessRequest, err := h.OAuth2.NewAccessRequest(ctx, r, session)
 	if err != nil {
@@ -437,6 +438,8 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprou
 				accessRequest.GrantScope(scope)
 			}
 		}
+	} else {
+		session.Claims.RequestedAt = time.Now()
 	}
 
 	accessResponse, err := h.OAuth2.NewAccessResponse(ctx, accessRequest)
