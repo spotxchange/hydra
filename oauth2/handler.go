@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
@@ -437,6 +438,8 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprou
 				accessRequest.GrantScope(scope)
 			}
 		}
+	} else {
+		session.Claims.RequestedAt = time.Now()
 	}
 
 	accessResponse, err := h.OAuth2.NewAccessResponse(ctx, accessRequest)
