@@ -421,8 +421,8 @@ func (h *Handler) IntrospectHandler(w http.ResponseWriter, r *http.Request, _ ht
 //       401: genericError
 //       500: genericError
 func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var session= NewSession("")
-	var ctx= fosite.NewContext()
+	var session = NewSession("")
+	var ctx = fosite.NewContext()
 
 	accessRequest, err := h.OAuth2.NewAccessRequest(ctx, r, session)
 	if err != nil {
