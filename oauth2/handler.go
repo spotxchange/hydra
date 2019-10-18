@@ -439,6 +439,7 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request, _ httprou
 			}
 		}
 	} else {
+		h.L.Infof("Setting requested at time to %d", time.Now())
 		session.Claims.RequestedAt = time.Now()
 	}
 
