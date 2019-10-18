@@ -15,6 +15,8 @@
 package oauth2
 
 import (
+	"time"
+
 	"github.com/mohae/deepcopy"
 	"github.com/spotxchange/fosite"
 	"github.com/spotxchange/fosite/handler/openid"
@@ -29,7 +31,9 @@ type Session struct {
 func NewSession(subject string) *Session {
 	return &Session{
 		DefaultSession: &openid.DefaultSession{
-			Claims:  new(jwt.IDTokenClaims),
+			Claims:  &jwt.IDTokenClaims{
+				RequestedAt: time.Now(),
+			},
 			Headers: new(jwt.Headers),
 			Subject: subject,
 		},
